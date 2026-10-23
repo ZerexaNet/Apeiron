@@ -79,12 +79,12 @@ def main(data_dir: str) -> int:
     # non-UTF-8 C locale. That is a property of the host, not of the interface,
     # so it is excluded from the "no Qt warnings" gate; everything else still
     # fails the run.
-    BENIGN = ("Detected locale",)
+    benign = ("Detected locale",)
 
-    def collect(mode, context, message):  # noqa: ANN001
-        if mode in (QtMsgType.QtWarningMsg, QtMsgType.QtCriticalMsg, QtMsgType.QtFatalMsg):
-            if not any(pattern in message for pattern in BENIGN):
-                warnings.append(message)
+    def collect(mode, context, message):
+        noisy = mode in (QtMsgType.QtWarningMsg, QtMsgType.QtCriticalMsg, QtMsgType.QtFatalMsg)
+        if noisy and not any(pattern in message for pattern in benign):
+            warnings.append(message)
 
     qInstallMessageHandler(collect)
 
