@@ -79,7 +79,7 @@ def main(data_dir: str) -> int:
     # non-UTF-8 C locale. That is a property of the host, not of the interface,
     # so it is excluded from the "no Qt warnings" gate; everything else still
     # fails the run.
-    benign = ("Detected locale",)
+    benign = ("Detected locale", "Populating font family aliases")
 
     def collect(mode, context, message):
         noisy = mode in (QtMsgType.QtWarningMsg, QtMsgType.QtCriticalMsg, QtMsgType.QtFatalMsg)
