@@ -61,6 +61,24 @@ def main() -> int:
     out_dir = (ROOT / args.output_dir).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    # Nuitka resolves --include-package through the interpreter's import system,
+    # and a subprocess started from a clean checkout cannot see src/ unless the
+    # distribution is installed. An editable install is idempotent and makes the
+    # build reproducible locally and on CI.
+    run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "--quiet",
+            "--no-deps",
+            "--no-build-isolation",
+            "--editable",
+            str(ROOT),
+        ]
+    )
+
     # 1. native extension ---------------------------------------------------
     run([sys.executable, "setup.py", "build_ext", "--inplace"])
     extension = next(iter((ROOT / "src" / "apeiron").glob("_logcore*")), None)
