@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import re
 import shutil
 import subprocess
 import sys
@@ -294,19 +295,25 @@ def main() -> int:
         return 0
 
     # check mode: every source string in the QML must have a translation
-    missing = []
+    pattern = re.compile(r'qsTr\("((?:[^"\\]|\\.)*)"\)')
+    missing: set[str] = set()
+    total = 0
     for f in QML_DIR.rglob("*.qml"):
-        for line in f.read_text(encoding="utf-8").splitlines():
-            if 'qsTr("' in line:
-                start = line.index('qsTr("') + 6
-                end = line.rindex('")')
-                text = line[start:end]
-                if text not in ZH and text not in IDENTICAL and "%" not in text:
-                    missing.append(text)
+        text = f.read_text(encoding="utf-8")
+        for match in pattern.finditer(text):
+            source = match.group(1).replace('\\"', '"').replace("\\\\", "\\")
+            total += 1
+            if source in ZH or source in IDENTICAL:
+                continue
+            if "%" in source:  # formatted at runtime, translated elsewhere
+                continue
+            missing.add(source)
     if missing:
-        print("missing translations:", *sorted(set(missing)), sep="\n  ")
+        print("missing translations:", file=sys.stderr)
+        for item in sorted(missing):
+            print("  -", item, file=sys.stderr)
         return 1
-    print("translation catalogue is complete")
+    print(f"translation catalogue is complete ({total} qsTr occurrences)")
     return 0
 
 

@@ -29,7 +29,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def run(command: list[str], *, cwd: Path | None = None, check: bool = True) -> subprocess.CompletedProcess:
+def run(
+    command: list[str], *, cwd: Path | None = None, check: bool = True
+) -> subprocess.CompletedProcess:
     print("+", " ".join(command), flush=True)
     result = subprocess.run(command, cwd=str(cwd or ROOT), check=False)
     if check and result.returncode != 0:
@@ -44,9 +46,6 @@ def main() -> int:
     parser.add_argument("--skip-self-check", action="store_true")
     parser.add_argument("--jobs", default="")
     args = parser.parse_args()
-
-    if sys.version_info < (3, 10):
-        raise SystemExit("Python 3.10+ is required")
 
     try:
         import nuitka  # noqa: F401
