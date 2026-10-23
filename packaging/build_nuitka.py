@@ -103,6 +103,9 @@ def main() -> int:
         "--include-package=apeiron",
         "--include-package-data=apeiron",
         "--noinclude-dlls=*.debug",
+        # The extension is shipped as a data file; letting the DLL scanner copy
+        # it again collides with that path (NotADirectoryError on macOS).
+        "--noinclude-dlls=_logcore*",
         f"--output-dir={out_dir}",
         f"--output-filename=Apeiron{'.exe' if platform.system() == 'Windows' else ''}",
         "--company-name=Zerexa Ltd",
