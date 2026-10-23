@@ -10,7 +10,6 @@ build/
 *.so
 *.pyd
 *.dll
-!src/apeiron/_logcore*
 
 # Nuitka / packaging
 dist/
@@ -18,6 +17,7 @@ dist/
 *.onefile-build/
 *.build/
 *.egg
+nuitka-crash-report.xml
 self-check.out
 
 # Test and tool caches
