@@ -47,6 +47,11 @@ def main() -> int:
     parser.add_argument("--report", default="")
     parser.add_argument("--java-major", type=int, default=17)
     parser.add_argument("--skip-assets", action="store_true")
+    parser.add_argument(
+        "--java-path",
+        default="",
+        help="use an existing java executable instead of downloading Temurin",
+    )
     parser.add_argument("--timeout", type=float, default=180.0)
     args = parser.parse_args()
 
@@ -77,7 +82,9 @@ def main() -> int:
 
     java_root = context.paths.java
     java_runtime = None
-    for candidate in java_root.glob("temurin-*/.ready"):
+    if args.java_path:
+        java_runtime = probe_java(Path(args.java_path))
+    for candidate in ([] if java_runtime else java_root.glob("temurin-*/.ready")):
         binary = next((p for p in (candidate.parent).rglob("bin/java")), None)
         if binary:
             java_runtime = probe_java(binary)
