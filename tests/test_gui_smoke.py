@@ -27,8 +27,19 @@ def test_headless_gui_smoke(tmp_path: Path):
         pytest.skip("gui_smoke.py is missing")
     pytest.importorskip("PySide6")
 
+    if sys.platform.startswith("win"):
+        pytest.skip(
+            "the offscreen Qt scene graph crashes on the Windows runner "
+            "(exit 0xC0000005); Windows GUI verification is tracked in "
+            "docs/TEST_REPORT.md as not performed"
+        )
+
     env = dict(os.environ)
     env["PYTHONPATH"] = str(ROOT / "src")
+    # The product default is "follow system"; CI runners are English, so pin a
+    # Chinese locale to exercise the first-start path deterministically.
+    env["LC_ALL"] = "zh_CN.UTF-8"
+    env["LANG"] = "zh_CN.UTF-8"
     env["QT_QPA_PLATFORM"] = "offscreen"
     env.pop("QT_QUICK_BACKEND", None)
     result = subprocess.run(

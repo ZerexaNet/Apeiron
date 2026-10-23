@@ -12,6 +12,7 @@ import pytest
 from apeiron.core.archive import extract_tar, extract_zip, is_within, zip_directory
 from apeiron.core.errors import ArchiveError, NetworkError, PermissionError_, UpdateError
 from apeiron.core.http import HttpClient
+from apeiron.core.paths import current_platform_key
 from apeiron.core.updates import UpdateChecker, parse_version
 
 
@@ -108,7 +109,9 @@ def test_update_returns_none_when_current(fake_http):
         good,
         {
             "version": "0.0.1",
-            "assets": {"linux": {"url": "https://github.com/x/y", "sha256": "a" * 64}},
+            "assets": {
+                current_platform_key(): {"url": "https://github.com/x/y", "sha256": "a" * 64}
+            },
         },
     )
     assert UpdateChecker(fake_http, good).check() is None
@@ -121,7 +124,13 @@ def test_update_detects_newer_version(fake_http):
         {
             "version": "99.0.0",
             "notes": "big release",
-            "assets": {"linux": {"url": "https://github.com/x/y", "sha256": "b" * 64, "size": 3}},
+            "assets": {
+                current_platform_key(): {
+                    "url": "https://github.com/x/y",
+                    "sha256": "b" * 64,
+                    "size": 3,
+                }
+            },
         },
     )
     info = UpdateChecker(fake_http, good).check()

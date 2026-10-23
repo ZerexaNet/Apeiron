@@ -74,13 +74,19 @@ def main(data_dir: str) -> int:
     from PySide6.QtQuickControls2 import QQuickStyle
 
     warnings: list[str] = []
-    qInstallMessageHandler(
-        lambda mode, context, message: (
-            warnings.append(message)
-            if mode in (QtMsgType.QtWarningMsg, QtMsgType.QtCriticalMsg, QtMsgType.QtFatalMsg)
-            else None
-        )
-    )
+
+    # A machine without an installed Chinese locale makes Qt warn about a
+    # non-UTF-8 C locale. That is a property of the host, not of the interface,
+    # so it is excluded from the "no Qt warnings" gate; everything else still
+    # fails the run.
+    BENIGN = ("Detected locale",)
+
+    def collect(mode, context, message):  # noqa: ANN001
+        if mode in (QtMsgType.QtWarningMsg, QtMsgType.QtCriticalMsg, QtMsgType.QtFatalMsg):
+            if not any(pattern in message for pattern in BENIGN):
+                warnings.append(message)
+
+    qInstallMessageHandler(collect)
 
     app = QGuiApplication([sys.argv[0]])
     QQuickStyle.setStyle("Material")

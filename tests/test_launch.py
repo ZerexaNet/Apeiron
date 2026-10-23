@@ -120,7 +120,7 @@ def _options(tmp_path: Path, **kwargs) -> LaunchOptions:
 
 def test_modern_command_contains_required_tokens(installed, tmp_path: Path):
     command = build_command(installed, _options(tmp_path))
-    assert command[0] == "/usr/bin/java"
+    assert command[0] == str(Path("/usr/bin/java"))
     assert "-Xmx4096M" in command
     assert "--username" in command and "Steve" in command
     assert "--accessToken" in command and "token-value" in command
