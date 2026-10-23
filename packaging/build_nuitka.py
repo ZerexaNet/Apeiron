@@ -47,6 +47,12 @@ def main() -> int:
     parser.add_argument("--jobs", default="")
     args = parser.parse_args()
 
+    # A clean checkout has no installed distribution, so make the source tree
+    # importable before Nuitka resolves --include-package=apeiron.
+    src = str(ROOT / "src")
+    if src not in sys.path:
+        sys.path.insert(0, src)
+
     try:
         import nuitka  # noqa: F401
     except ImportError:

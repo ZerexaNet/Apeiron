@@ -146,7 +146,7 @@ def test_update_download_verifies_checksum(fake_http, tmp_path: Path):
         good,
         {
             "version": "99.0.0",
-            "assets": {"linux": {"url": "https://github.com/x/y", "sha256": digest}},
+            "assets": {current_platform_key(): {"url": "https://github.com/x/y", "sha256": digest}},
         },
     )
     checker = UpdateChecker(fake_http, good)

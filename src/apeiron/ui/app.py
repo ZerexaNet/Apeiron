@@ -36,15 +36,29 @@ FONT_CANDIDATES = (
     "Hiragino Sans GB",
     "WenQuanYi Micro Hei",
     "Segoe UI",
+    "Helvetica Neue",
     "Inter",
     "DejaVu Sans",
+    "Arial",
 )
 
 
 def _configure_font(app: QGuiApplication) -> None:
-    """Pick the first available font that can render Simplified Chinese."""
+    """Prefer a font that can render Simplified Chinese, if one exists.
+
+    Requesting families that are not installed makes Qt build alias tables (and
+    warn about the time it takes), so the candidate list is filtered against the
+    installed families and the platform default is kept when nothing matches.
+    """
+    from PySide6.QtGui import QFontDatabase
+
+    installed = set(QFontDatabase.families())
+    available = [name for name in FONT_CANDIDATES if name in installed]
+    if not available:
+        log.info("no preferred UI font installed; keeping the platform default")
+        return
     font = QFont()
-    font.setFamilies(list(FONT_CANDIDATES))
+    font.setFamilies(available)
     font.setPointSize(10)
     app.setFont(font)
 
