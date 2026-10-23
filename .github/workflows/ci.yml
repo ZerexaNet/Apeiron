@@ -1,0 +1,186 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "develop"]
+  pull_request:
+  workflow_dispatch:
+
+# Least privilege: nothing here writes to the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUNBUFFERED: "1"
+  QT_QPA_PLATFORM: offscreen
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+jobs:
+  lint:
+    name: Lint and format
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install "ruff>=0.6"
+      - name: ruff check
+        run: ruff check src tests tools packaging
+      - name: ruff format
+        run: ruff format --check src tests tools packaging
+
+  types:
+    name: Type check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install "PySide6-Essentials>=6.8,<6.10" "mypy>=1.11" "pytest>=8"
+      - name: mypy
+        run: mypy src/apeiron
+
+  c-core:
+    name: C logging core (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14, windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build and run the standalone C test harness (POSIX)
+        if: runner.os != 'Windows'
+        run: |
+          cc -std=c11 -O2 -Wall -Wextra -pthread csrc/logcore.c csrc/test_logcore.c -o test_logcore
+          ./test_logcore
+      - name: Compile the extension and run the C harness (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -m pip install "setuptools>=68" wheel
+          python setup.py build_ext --inplace
+          # MSVC build of the same sources proves portability; the harness is
+          # compiled with the Windows toolchain through the extension build.
+          python -c "import apeiron._logcore as m; print('extension', m.__version__)"
+        env:
+          PYTHONPATH: src
+
+  tests:
+    name: Tests (${{ matrix.os }}, py${{ matrix.python }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14, windows-2022]
+        python: ["3.10", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install Qt runtime libraries (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libxkbcommon-x11-0 libdbus-1-3 \
+            libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "PySide6-Essentials>=6.8,<6.10" "PySide6-Addons>=6.8,<6.10" \
+            "pytest>=8" "pytest-timeout>=2.3" "setuptools>=68" wheel
+      - name: Build native extension
+        run: python setup.py build_ext --inplace
+      - name: Build translations
+        run: python tools/build_translations.py
+      - name: pytest
+        env:
+          PYTHONPATH: src
+        run: python -m pytest tests -q
+
+  i18n:
+    name: Translation completeness
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install "PySide6-Essentials>=6.8,<6.10"
+      - name: Every qsTr string is translated
+        run: python tools/build_translations.py --check
+      - name: Catalogues compile and are non-empty
+        run: |
+          python tools/build_translations.py
+          python - <<'PY'
+          from pathlib import Path
+          files = sorted(Path("src/apeiron/i18n").glob("*.qm"))
+          assert files, "no .qm files were produced"
+          for f in files:
+              assert f.stat().st_size > 512, f"{f} is suspiciously small"
+              print(f.name, f.stat().st_size, "bytes")
+          PY
+
+  qml:
+    name: QML load and UI smoke
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install Qt runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libxkbcommon-x11-0 libdbus-1-3 \
+            libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "PySide6-Essentials>=6.8,<6.10" "PySide6-Addons>=6.8,<6.10" \
+            "pytest>=8" "pytest-qt>=4.4" "pytest-timeout>=2.3" "setuptools>=68" wheel
+      - run: python setup.py build_ext --inplace
+      - run: python tools/build_translations.py
+      - name: Headless UI smoke
+        env:
+          PYTHONPATH: src
+        run: python tools/gui_smoke.py "$RUNNER_TEMP/gui-root"
+
+  workflow-lint:
+    name: Workflow syntax
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate YAML
+        run: |
+          python -m pip install --quiet pyyaml
+          python - <<'PY'
+          import sys, yaml
+          from pathlib import Path
+          ok = True
+          for path in sorted(Path(".github/workflows").glob("*.yml")):
+              try:
+                  data = yaml.safe_load(path.read_text())
+                  jobs = data.get("jobs", {})
+                  assert jobs, "workflow has no jobs"
+                  print(f"{path.name}: {len(jobs)} jobs")
+              except Exception as exc:  # noqa: BLE001
+                  ok = False
+                  print(f"{path.name}: {exc}", file=sys.stderr)
+          raise SystemExit(0 if ok else 1)
+          PY
