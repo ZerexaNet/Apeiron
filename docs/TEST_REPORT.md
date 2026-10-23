@@ -202,7 +202,68 @@ Real defects uncovered by running things rather than reading them:
 YAML validation of `.github/workflows/ci.yml` and `build.yml` was performed with
 PyYAML (jobs present, no syntax errors). No remote Actions result is claimed.
 
-## 10. Reproducing this report
+## 11. Remote CI (actual GitHub Actions results)
+
+Workflow `CI` on commit `2363f88` — **all 14 jobs succeeded**:
+
+| Job | ubuntu-24.04 | macos-14 | windows-2022 |
+| --- | --- | --- | --- |
+| Lint and format | success | — | — |
+| Type check | success | — | — |
+| Translation completeness | success | — | — |
+| QML load and UI smoke | success | — | — |
+| Workflow syntax | success | — | — |
+| C logging core | success | success | success |
+| Tests (py3.10) | success | success | success |
+| Tests (py3.12) | success | success | success |
+
+Workflow `Build` on the same commit:
+
+| Platform | Result |
+| --- | --- |
+| Ubuntu 22.04 | **success** — Nuitka artifact built, self-checked inside CI, uploaded |
+| macOS 14 | **failure** — see below |
+| Windows 2022 | **failure** — see below |
+
+### What the CI loop actually caught
+
+The first push was not green, and the failures were real:
+
+1. `packaging/` had never been linted locally (unused `noqa`, outdated version guard).
+2. The translation completeness checker parsed `qsTr` line-by-line and produced
+   false positives for lines containing two calls; it now uses a regular
+   expression over each file (186 occurrences verified).
+3. pip installs used backslash continuations, which are a parse error under
+   PowerShell — the default shell on Windows runners.
+4. Update-check tests hard-coded a `linux` asset entry, so the checker correctly
+   found nothing on macOS/Windows; they now use `current_platform_key()`.
+5. One launch test compared `argv[0]` with `/usr/bin/java`, which renders with
+   backslashes on Windows.
+6. The GUI smoke assumed Chinese output while the product default is "follow
+   system" and runners are English; the run now pins a Chinese locale.
+7. The UI requested font families that were absent on the macOS runner, making
+   Qt build alias tables and warn; families are now filtered against the ones
+   actually installed.
+8. Nuitka could not see the package in a clean checkout; the build now performs
+   an idempotent editable install first.
+9. The build workflow looked for `__main__.dist` while Nuitka names the
+   directory after the compiled entry script (`entry.dist`).
+10. Nuitka copied the logging extension both as a data file and as a shared
+    library, colliding on macOS with `NotADirectoryError`; that scan is excluded.
+
+### Unresolved at the time of writing
+
+* **macOS and Windows Nuitka packaging still fail in CI.** The macOS job
+  progressed past the duplicate-copy crash but fails later in the Nuitka stage;
+  the Windows job fails as well. Neither could be reproduced here because no
+  macOS or Windows host was available, so the cause is **not diagnosed** and no
+  artifact is claimed for those platforms. Linux packaging is verified both
+  locally (§5) and in CI.
+* **Windows GUI smoke** crashes the offscreen scene graph (0xC0000005) on the
+  GitHub runner and is skipped there with an explicit reason; the CI `qml` job
+  runs on Linux, where it passes. Windows GUI behaviour is therefore unverified.
+
+## 12. Reproducing this report
 
 ```bash
 python -m venv .venv && . .venv/bin/activate
