@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Native extension build output (rebuilt by setup.py / CI)
+build/
+*.so
+*.pyd
+*.dll
+!src/apeiron/_logcore*
+
+# Nuitka / packaging
+dist/
+*.dist/
+*.onefile-build/
+*.build/
+*.egg
+self-check.out
+
+# Test and tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Qt Linguist intermediate output
+*.qm.bak
+
+# Editors and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local runtime data that must never be committed
+apeiron-data/
+*.log
