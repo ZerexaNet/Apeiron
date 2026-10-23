@@ -269,7 +269,12 @@ def test_logging_config_without_maven_path():
             "logging": {
                 "client": {
                     "argument": "-Dlog4j.configurationFile=${path}",
-                    "file": {"id": "client-1.12.xml", "sha1": "abc", "size": 10, "url": "https://x/y"},
+                    "file": {
+                        "id": "client-1.12.xml",
+                        "sha1": "abc",
+                        "size": 10,
+                        "url": "https://x/y",
+                    },
                 }
             },
         }

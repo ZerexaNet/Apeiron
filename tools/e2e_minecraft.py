@@ -59,8 +59,8 @@ def main() -> int:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
     from apeiron.core import logging as native
-    from apeiron.services.app_context import build_context
     from apeiron.core.errors import ApeironError
+    from apeiron.services.app_context import build_context
 
     context = build_context()
     stage("bootstrap", True, data_root=str(context.paths.root))
@@ -84,7 +84,7 @@ def main() -> int:
     java_runtime = None
     if args.java_path:
         java_runtime = probe_java(Path(args.java_path))
-    for candidate in ([] if java_runtime else java_root.glob("temurin-*/.ready")):
+    for candidate in [] if java_runtime else java_root.glob("temurin-*/.ready"):
         binary = next((p for p in (candidate.parent).rglob("bin/java")), None)
         if binary:
             java_runtime = probe_java(binary)
@@ -110,14 +110,17 @@ def main() -> int:
                     raise ApeironError("Java package checksum mismatch")
 
         java_runtime = install_runtime(package, java_root, download=download)
-    stage("java_runtime", java_runtime.major >= args.java_major,
-          version=java_runtime.version, major=java_runtime.major, managed=java_runtime.managed)
+    stage(
+        "java_runtime",
+        java_runtime.major >= args.java_major,
+        version=java_runtime.version,
+        major=java_runtime.major,
+        managed=java_runtime.managed,
+    )
 
     # 3/4. install the game files -----------------------------------------
     started = time.monotonic()
-    installed = context.installer.install(
-        args.version, include_assets=not args.skip_assets
-    )
+    installed = context.installer.install(args.version, include_assets=not args.skip_assets)
     problems = context.installer.verify(args.version)
     stage(
         "install",
@@ -192,8 +195,12 @@ def main() -> int:
     )
 
     log_path = context.launcher.launches.recent(1)[0].log_path
-    stage("game_log", Path(log_path).exists(), path=log_path,
-          bytes=Path(log_path).stat().st_size if Path(log_path).exists() else 0)
+    stage(
+        "game_log",
+        Path(log_path).exists(),
+        path=log_path,
+        bytes=Path(log_path).stat().st_size if Path(log_path).exists() else 0,
+    )
 
     REPORT["ok"] = all(item["ok"] for item in REPORT["stages"])
     native.flush()
@@ -206,7 +213,7 @@ if __name__ == "__main__":
     except SystemExit as exc:
         code = 1
         print(f"aborted: {exc}", file=sys.stderr)
-    except BaseException as exc:  # noqa: BLE001
+    except BaseException as exc:
         import traceback
 
         traceback.print_exc()
