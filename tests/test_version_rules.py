@@ -239,3 +239,48 @@ def test_java_compatibility_guard():
 
     with pytest.raises(UnsupportedError):
         check_java_compatibility(17, 8)
+
+
+def test_client_download_without_maven_path():
+    """The real Mojang JSON has no `path` on downloads.client."""
+    descriptor = VersionDescriptor.from_dict(
+        {
+            "id": "1.20.1",
+            "downloads": {
+                "client": {
+                    "sha1": "0c3ec587af28e5a785c0b4a7b8a30f9a8f78f838",
+                    "size": 23028853,
+                    "url": "https://piston-data.mojang.com/v1/objects/x/client.jar",
+                }
+            },
+        }
+    )
+    artifact = descriptor.client_download()
+    assert artifact is not None
+    assert artifact.url.endswith("client.jar")
+    assert artifact.sha1.startswith("0c3ec5")
+    assert artifact.path == "1.20.1.jar"
+
+
+def test_logging_config_without_maven_path():
+    descriptor = VersionDescriptor.from_dict(
+        {
+            "id": "1.20.1",
+            "logging": {
+                "client": {
+                    "argument": "-Dlog4j.configurationFile=${path}",
+                    "file": {"id": "client-1.12.xml", "sha1": "abc", "size": 10, "url": "https://x/y"},
+                }
+            },
+        }
+    )
+    artifact = descriptor.logging_config()
+    assert artifact is not None
+    assert artifact.path == "client-1.12.xml"
+    assert artifact.url == "https://x/y"
+
+
+def test_missing_client_download_returns_none():
+    descriptor = VersionDescriptor.from_dict({"id": "x"})
+    assert descriptor.client_download() is None
+    assert descriptor.logging_config() is None

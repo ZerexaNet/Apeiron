@@ -336,13 +336,39 @@ class VersionDescriptor:
         return self.merged().java_major or 8
 
     def client_download(self) -> Artifact | None:
+        """The client jar.
+
+        Unlike libraries, the ``downloads.client`` entry has no Maven ``path``:
+        it is just a url/sha1/size triple, so ``Artifact.from_dict`` (which
+        requires a path) must not be used here.
+        """
         merged = self.merged()
-        return Artifact.from_dict(merged.downloads.get("client") or {})
+        raw = merged.downloads.get("client") or {}
+        url = raw.get("url")
+        if not url:
+            return None
+        return Artifact(
+            path=str(raw.get("path") or f"{merged.id}.jar"),
+            url=str(url),
+            sha1=str(raw.get("sha1") or ""),
+            size=int(raw.get("size") or 0),
+        )
 
     def logging_config(self) -> Artifact | None:
+        """Optional log4j configuration; its entry also has no ``path``."""
         merged = self.merged()
         client = (merged.logging or {}).get("client") or {}
-        return Artifact.from_dict(client.get("file") or {})
+        raw = client.get("file") or {}
+        url = raw.get("url")
+        if not url:
+            return None
+        identifier = str(raw.get("id") or "client-log4j.xml")
+        return Artifact(
+            path=identifier,
+            url=str(url),
+            sha1=str(raw.get("sha1") or ""),
+            size=int(raw.get("size") or 0),
+        )
 
     def native_libraries(self, platform_key: str) -> list[Library]:
         merged = self.merged()
