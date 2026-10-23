@@ -61,12 +61,11 @@ jobs:
       - name: Smoke-run the packaged entry point
         shell: bash
         run: |
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            BIN="dist/__main__.dist/Apeiron.exe"
-          else
-            BIN="dist/__main__.dist/Apeiron"
-          fi
-          test -x "$BIN" || { echo "missing artifact: $BIN"; ls -R dist | head -50; exit 1; }
+          # The standalone directory is named after the compiled entry script,
+          # so locate the binary instead of hard-coding it.
+          BIN=$(find dist -maxdepth 2 -type f -name "Apeiron*" | head -1)
+          test -n "$BIN" || { echo "no artifact produced"; ls -R dist | head -50; exit 1; }
+          echo "artifact: $BIN"
           "$BIN" --version
           QT_QPA_PLATFORM=offscreen "$BIN" --self-check | tee self-check.out
           python - <<'PY'
@@ -87,10 +86,13 @@ jobs:
         shell: bash
         run: |
           mkdir -p out
+          DIST_DIR=$(find dist -maxdepth 1 -type d -name "*.dist" | head -1)
+          test -n "$DIST_DIR" || { echo "no distribution directory"; exit 1; }
+          NAME=$(basename "$DIST_DIR")
           if [ "$RUNNER_OS" = "Windows" ]; then
-            (cd dist && 7z a "../out/${{ matrix.artifact }}.zip" __main__.dist >/dev/null)
+            (cd dist && 7z a "../out/${{ matrix.artifact }}.zip" "$NAME" >/dev/null)
           else
-            (cd dist && tar -czf "../out/${{ matrix.artifact }}.tar.gz" __main__.dist)
+            (cd dist && tar -czf "../out/${{ matrix.artifact }}.tar.gz" "$NAME")
           fi
           ls -lh out
       - uses: actions/upload-artifact@v4
