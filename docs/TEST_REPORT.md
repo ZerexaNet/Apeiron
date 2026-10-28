@@ -318,3 +318,7 @@ compiled and loaded its native extension, QML, translations and database. Its st
 self-check then caught an absent default `Sans Serif` family. Self-check now calls the
 same installed-font selection routine as normal GUI startup, rather than suppressing
 the warning. The corresponding follow-up Actions run validates the final package.
+
+The next macOS self-check confirmed the UI font repair and exposed the log page's
+hardcoded `Monospace` family. That page now uses Qt's system fixed-font family through
+the backend; neither of the missing-family warnings is whitelisted.

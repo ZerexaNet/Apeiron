@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import Property, QObject, QRunnable, QThreadPool, QTimer, QUrl, Signal, Slot
+from PySide6.QtGui import QFontDatabase
 
 from apeiron.core import __version__
 from apeiron.core.errors import ApeironError
@@ -170,6 +171,10 @@ class Backend(QObject):
     @Property(str, notify=selectionChanged)
     def selectedInstanceId(self) -> str:
         return self._selected_id
+
+    @Property(str, constant=True)
+    def fixedFontFamily(self) -> str:
+        return QFontDatabase.systemFont(QFontDatabase.SystemFont.FixedFont).family()
 
     @Property(str, notify=consoleChanged)
     def consoleText(self) -> str:
