@@ -322,3 +322,8 @@ the warning. The corresponding follow-up Actions run validates the final package
 The next macOS self-check confirmed the UI font repair and exposed the log page's
 hardcoded `Monospace` family. That page now uses Qt's system fixed-font family through
 the backend; neither of the missing-family warnings is whitelisted.
+
+Qt offscreen can return the generic uninstalled name even from `systemFont(FixedFont)`
+(reproduced locally as `monospace`, absent from the installed family list). The log-font
+selection therefore checks installed families and explicitly selects a fixed-pitch face
+when needed. The GUI smoke checks this installed-font contract on the host.

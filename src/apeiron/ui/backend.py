@@ -174,7 +174,16 @@ class Backend(QObject):
 
     @Property(str, constant=True)
     def fixedFontFamily(self) -> str:
-        return QFontDatabase.systemFont(QFontDatabase.SystemFont.FixedFont).family()
+        families = QFontDatabase.families()
+        preferred = QFontDatabase.systemFont(QFontDatabase.SystemFont.FixedFont).family()
+        if preferred in families:
+            return preferred
+        # Offscreen platforms may return a generic, uninstalled family even
+        # from systemFont(). Select an installed fixed-pitch face explicitly.
+        return next(
+            (family for family in families if QFontDatabase.isFixedPitch(family)),
+            families[0] if families else "",
+        )
 
     @Property(str, notify=consoleChanged)
     def consoleText(self) -> str:
