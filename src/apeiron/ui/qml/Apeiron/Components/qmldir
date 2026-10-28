@@ -1,0 +1,8 @@
+module Apeiron.Components
+singleton Theme 1.0 Theme.qml
+Card 1.0 Card.qml
+Badge 1.0 Badge.qml
+EmptyState 1.0 EmptyState.qml
+NavRail 1.0 NavRail.qml
+PageHeader 1.0 PageHeader.qml
+Toast 1.0 Toast.qml
