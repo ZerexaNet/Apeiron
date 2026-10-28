@@ -18,7 +18,9 @@ Only explicitly recognized public download hosts are rewritten. Microsoft/Xbox/M
 account APIs, CurseForge API calls, Modrinth downloads and arbitrary modpack URLs retain
 their original destinations. HTTPS is required, including after streaming redirects.
 
-A failed or corrupt mirror advances to the next source. Each file attempt starts a new
+Already-rewritten links returned in mirror manifests are routed through the same
+priority chain with an official upstream fallback. A failed or corrupt mirror advances
+to the next source. Each file attempt starts a new
 `.part` file, verifies size and all supplied SHA-1/SHA-512 digests, and atomically commits
 only verified bytes. Download progress counts successful bytes once and removes bytes
 from discarded attempts. Independent batches are serialized so their cancellation and

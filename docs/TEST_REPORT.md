@@ -287,6 +287,7 @@ real digests and successful loader installation is explicitly stubbed.
 Verified locally on Linux / Python 3.12 / PySide6 6.9.3:
 
 - C11 harness: 44 checks, 0 failures.
+- Pytest: 217 passed, including 45 new regression cases and the headless GUI smoke.
 - Ruff and mypy: clean after remediation.
 - Mirror mapping, priority, corrupt-source fallback, SHA-512-only downloads, streaming
   downgrade rejection and OAuth HTTP 400 protocol states are exercised with controlled
@@ -301,6 +302,12 @@ identified as `Apeiron`/`apeiron` filesystem collision; Windows failed its other
 successful package self-check because offscreen Qt did not discover the Windows fonts.
 Both causes are addressed in this revision. Cross-platform package results must be read
 from the follow-up PR's Actions runs; local Linux tests do not certify Windows/macOS.
-Live mirror reachability and a licensed Microsoft sign-in are not certified by these
-mocked protocol tests. The local network returned HTTP 503 for the bsmirror manifest
-probe. See `docs/DOWNLOAD_SOURCES.md` for routing and configuration.
+Online spot checks reached the mirror.hkmc.online and BMCLAPI version manifests (921
+entries each), then fetched Minecraft 1.20.1 version JSON and a 1,330,045-byte library
+with checksum verification. bsmirror returned 503 or timed out in this environment.
+The probe exposed already-rewritten mirror URLs in manifest entries; those now retain
+the full priority chain and a reconstructed official fallback (three additional tests).
+A licensed Microsoft sign-in and sustained mirror availability are not certified.
+The local Nuitka build reached GCC but could not link because this environment's Python
+runtime lacks its referenced `lib/libpython3.12.so`; hosted packaging is checked separately.
+See `docs/DOWNLOAD_SOURCES.md` for routing and configuration.

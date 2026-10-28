@@ -558,3 +558,12 @@ def test_file_url_conversion_and_backend_completion(app_paths, monkeypatch):
     assert stopped == [True]
     context.database.close()
     assert app is not None
+
+
+@pytest.mark.parametrize("root", MIRROR_ROOTS)
+def test_embedded_mirror_metadata_urls_keep_all_fallbacks(root):
+    path = "/v1/packages/abc/1.20.1.json"
+    assert download_candidates(root + path) == (
+        *(mirror + path for mirror in MIRROR_ROOTS),
+        "https://piston-meta.mojang.com" + path,
+    )
