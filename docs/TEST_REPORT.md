@@ -311,3 +311,10 @@ A licensed Microsoft sign-in and sustained mirror availability are not certified
 The local Nuitka build reached GCC but could not link because this environment's Python
 runtime lacks its referenced `lib/libpython3.12.so`; hosted packaging is checked separately.
 See `docs/DOWNLOAD_SOURCES.md` for routing and configuration.
+
+
+The first follow-up package run passed Linux and Windows, and macOS successfully
+compiled and loaded its native extension, QML, translations and database. Its strict
+self-check then caught an absent default `Sans Serif` family. Self-check now calls the
+same installed-font selection routine as normal GUI startup, rather than suppressing
+the warning. The corresponding follow-up Actions run validates the final package.
