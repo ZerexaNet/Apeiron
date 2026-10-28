@@ -9,6 +9,7 @@ of crashing the launcher.
 from __future__ import annotations
 
 import json
+import math
 import os
 import tempfile
 from dataclasses import asdict, dataclass, field, fields
@@ -76,7 +77,20 @@ class Settings:
     def normalised(self) -> Settings:
         """Return a copy with every field inside its supported range."""
         clone = Settings(**{f.name: getattr(self, f.name) for f in fields(Settings)})
-        clone.extra = dict(self.extra)
+        defaults = Settings()
+        for f in fields(Settings):
+            value = getattr(clone, f.name)
+            default = getattr(defaults, f.name)
+            if isinstance(default, bool):
+                valid = isinstance(value, bool)
+            elif isinstance(default, (int, float)):
+                valid = isinstance(value, (int, float)) and not isinstance(value, bool)
+                valid = valid and math.isfinite(value)
+            else:
+                valid = isinstance(value, type(default))
+            if not valid:
+                setattr(clone, f.name, default)
+        clone.extra = dict(clone.extra)
         if clone.language not in SUPPORTED_LANGUAGES:
             clone.language = "system"
         if clone.theme not in SUPPORTED_THEMES:
@@ -198,7 +212,8 @@ def migrate(raw: dict[str, Any]) -> dict[str, Any]:
     Version 1 stored ``lang`` and ``dark_mode``; version 2 introduced the
     tri-state ``language`` (``system``) and ``theme``.
     """
-    version = int(raw.get("schema_version", 1) or 1)
+    value = raw.get("schema_version", 1)
+    version = value if isinstance(value, int) and not isinstance(value, bool) else 1
     if version < 2:
         lang = raw.pop("lang", None)
         if lang in ("zh_CN", "en_US"):

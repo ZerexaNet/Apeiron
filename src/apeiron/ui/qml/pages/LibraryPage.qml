@@ -21,7 +21,7 @@ Item {
         title: qsTr("Import instance archive")
         fileMode: FileDialog.OpenFile
         nameFilters: [qsTr("Instance archive (*.zip)"), qsTr("All files (*)")]
-        onAccepted: App.importModpack(selectedFile)
+        onAccepted: App.importInstance(selectedFile)
     }
 
     RowLayout {
@@ -184,13 +184,11 @@ Item {
                         textRole: "name"
                         valueRole: "id"
                         onActivated: App.selectAccount(currentValue, App.selectedInstanceId)
-                        Component.onCompleted: {
-                            for (var i = 0; i < App.accounts.length; ++i) {
-                                if (App.accounts[i].id === App.selectedInstance.accountId) {
-                                    currentIndex = i
-                                    break
-                                }
-                            }
+                        currentIndex: {
+                            var selected = App.selectedInstance.accountId
+                            for (var i = 0; i < App.accounts.length; ++i)
+                                if (App.accounts[i].id === selected) return i
+                            return -1
                         }
                     }
 
@@ -238,7 +236,7 @@ Item {
                             App.selectedInstance.name,
                             accountBox.currentValue || "",
                             jvmField.text,
-                            "",
+                            App.selectedInstance.gameArgs || "",
                             memoryBox.value,
                             parseInt(widthField.text),
                             parseInt(heightField.text))
@@ -363,11 +361,33 @@ Item {
         onAccepted: {
             var loaderName = ["vanilla", "fabric", "quilt", "forge", "neoforge"][loaderBox.currentIndex]
             var loaderVersion = loaderBox.currentIndex === 0 ? "" : (loaderVersionBox.currentText || "")
-            App.createInstance(nameField.text, versionBox.currentText, loaderName, loaderVersion, "")
+            if (loaderName === "forge" || loaderName === "neoforge") {
+                loaderConsent.open()
+            } else {
+                App.createInstance(nameField.text, versionBox.currentText, loaderName, loaderVersion, "")
+            }
         }
         onOpened: {
             if (App.versions.length > 0 && versionBox.currentIndex < 0) versionBox.currentIndex = 0
         }
+    }
+
+    Dialog {
+        id: loaderConsent
+        implicitWidth: 460
+        implicitHeight: 240
+        title: qsTr("Run loader installer?")
+        modal: true
+        anchors.centerIn: parent
+        standardButtons: Dialog.Cancel | Dialog.Ok
+        Label {
+            width: 400
+            wrapMode: Text.WordWrap
+            text: qsTr("Forge and NeoForge installation runs downloaded Java code. Continue only if you trust the loader.")
+        }
+        onAccepted: App.createInstance(nameField.text, versionBox.currentText,
+            ["vanilla", "fabric", "quilt", "forge", "neoforge"][loaderBox.currentIndex],
+            loaderVersionBox.currentText, "", true)
     }
 
 }

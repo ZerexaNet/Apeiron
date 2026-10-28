@@ -122,6 +122,7 @@ class LaunchService:
         access_token: str = "0",
         user_type: str = "legacy",
         xuid: str = "",
+        client_id: str = "",
         on_line: Callable[[str], None] | None = None,
         on_exit: Callable[[int], None] | None = None,
         on_stage: Callable[[InstallStage], None] | None = None,
@@ -137,6 +138,8 @@ class LaunchService:
             if not instance_dir.exists():
                 raise LaunchError(f"the instance directory is missing: {instance_dir}")
 
+            self.installer.materialize_resources(installed, instance_dir)
+
             options = LaunchOptions(
                 instance_name=instance.name,
                 game_directory=instance_dir,
@@ -146,6 +149,7 @@ class LaunchService:
                 access_token=access_token,
                 user_type=user_type,
                 xuid=xuid,
+                client_id=client_id,
                 memory_mb=instance.memory_mb,
                 width=instance.width,
                 height=instance.height,
@@ -164,8 +168,10 @@ class LaunchService:
                 started_at=time.time(),
             )
 
+            started_at = self.state.started_at
+
             def _exit(code: int) -> None:
-                duration = int(time.time() - (self.state.started_at or time.time()))
+                duration = max(0, int(time.time() - started_at))
                 status = "exited" if code == 0 else "crashed"
                 self.launches.finish(record.id, code, status, duration)
                 self.instances_repo.mark_played(instance.id, duration)
@@ -182,23 +188,34 @@ class LaunchService:
                 on_line=on_line,
                 on_exit=_exit,
             )
-            process.start()
+            try:
+                process.start()
+            except Exception:
+                self.launches.finish(record.id, -1, "failed", 0)
+                self.state = LaunchState(instance_id=instance.id, phase="exited", exit_code=-1)
+                raise
             self.process = process
-            self.state = LaunchState(
-                instance_id=instance.id,
-                phase="running",
-                detail=str(runtime.path),
-                pids=process.pid or 0,
-                started_at=time.time(),
-            )
+            if process.running:
+                self.state = LaunchState(
+                    instance_id=instance.id,
+                    phase="running",
+                    detail=str(runtime.path),
+                    pids=process.pid or 0,
+                    started_at=started_at,
+                )
             return process
 
     def stop(self) -> int | None:
         if self.process is None:
             return None
         code = self.process.stop()
-        self.state = LaunchState(instance_id=self.state.instance_id, phase="exited", exit_code=code)
         return code
+
+    def delete_instance(self, instance_id: str, delete: Callable[[str], None]) -> None:
+        with self._lock:
+            if self.state.instance_id == instance_id and self.running:
+                raise LaunchError("cannot delete an instance while its game is running")
+            delete(instance_id)
 
     @property
     def running(self) -> bool:

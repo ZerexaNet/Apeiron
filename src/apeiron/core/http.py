@@ -13,6 +13,7 @@ predictable, but it enforces the rules Apeiron needs:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import random
 import socket
@@ -26,8 +27,9 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from apeiron.core import __version__ as apeiron_version
-from apeiron.core.errors import NetworkError, TimeoutError_
+from apeiron.core.errors import IntegrityError, NetworkError, TimeoutError_
 from apeiron.core.logging import get_logger
+from apeiron.net.sources import download_candidates
 
 log = get_logger("http")
 
@@ -49,6 +51,7 @@ class HttpConfig:
     backoff_base: float = 0.5
     backoff_max: float = 20.0
     verify_tls: bool = True
+    use_mirrors: bool = False
     allow_insecure: bool = False  # loopback HTTP only, used by tests
 
 
@@ -101,7 +104,7 @@ class HttpClient:
         return url
 
     # -- core request -------------------------------------------------------
-    def request(
+    def _request(
         self,
         url: str,
         *,
@@ -111,6 +114,7 @@ class HttpClient:
         timeout: float | None = None,
         max_bytes: int = MAX_JSON_BYTES,
         retries: int | None = None,
+        accepted_statuses: frozenset[int] = frozenset(),
     ) -> Response:
         self.validate_url(url, allow_insecure=self.config.allow_insecure)
         attempts = self.config.retries if retries is None else retries
@@ -126,6 +130,7 @@ class HttpClient:
                     data=data,
                     timeout=timeout,
                     max_bytes=max_bytes,
+                    accepted_statuses=accepted_statuses,
                 )
             except _Retryable as exc:
                 last_error = exc.__cause__ or exc
@@ -149,6 +154,30 @@ class HttpClient:
             detail=str(last_error),
         ) from last_error
 
+    def request(
+        self, url: str, *, expected_sha1: str = "", validate_json: bool = False, **kwargs: Any
+    ) -> Response:
+        candidates = self.candidates(url) if kwargs.get("method", "GET") == "GET" else (url,)
+        last_error: Exception | None = None
+        for candidate in candidates:
+            try:
+                response = self._request(candidate, **kwargs)
+                if (
+                    expected_sha1
+                    and hashlib.sha1(response.body).hexdigest() != expected_sha1.lower()
+                ):
+                    raise IntegrityError("version metadata checksum mismatch")
+                if validate_json:
+                    response.json()
+                return response
+            except (NetworkError, IntegrityError) as exc:
+                last_error = exc
+        assert last_error is not None
+        raise last_error
+
+    def candidates(self, url: str) -> tuple[str, ...]:
+        return download_candidates(url) if self.config.use_mirrors else (url,)
+
     def _backoff(self, attempt: int) -> float:
         raw = self.config.backoff_base * (2**attempt)
         capped = min(raw, self.config.backoff_max)
@@ -163,6 +192,7 @@ class HttpClient:
         data: bytes | None,
         timeout: float,
         max_bytes: int,
+        accepted_statuses: frozenset[int] = frozenset(),
     ) -> Response:
         merged = {"User-Agent": user_agent(), "Accept-Encoding": "identity"}
         if headers:
@@ -184,6 +214,15 @@ class HttpClient:
                     body=body,
                 )
         except urllib.error.HTTPError as exc:
+            if exc.code in accepted_statuses:
+                with exc:
+                    self._check_redirect_origin(url, exc.geturl())
+                    body = exc.read(max_bytes + 1)
+                    if len(body) > max_bytes:
+                        raise _Fatal(
+                            NetworkError("HTTP error response exceeds size limit")
+                        ) from exc
+                    return Response(exc.geturl(), exc.code, dict(exc.headers), body)
             retry_after = _parse_retry_after(
                 exc.headers.get("Retry-After") if exc.headers else None
             )
@@ -228,7 +267,7 @@ class HttpClient:
 
     # -- convenience --------------------------------------------------------
     def get_json(self, url: str, **kwargs: Any) -> Any:
-        return self.request(url, **kwargs).json()
+        return self.request(url, validate_json=True, **kwargs).json()
 
     def get_bytes(self, url: str, **kwargs: Any) -> bytes:
         return self.request(url, **kwargs).body
@@ -247,11 +286,14 @@ class HttpClient:
         timeout = self.config.timeout if timeout is None else timeout
         try:
             with urllib.request.urlopen(request, timeout=timeout, context=self._context) as raw:
+                self._check_redirect_origin(url, raw.geturl())
                 while True:
                     chunk = raw.read(chunk_size)
                     if not chunk:
                         break
                     yield chunk
+        except _Fatal as exc:
+            raise exc.error from exc
         except urllib.error.HTTPError as exc:
             raise NetworkError(f"HTTP {exc.code} for {_safe(url)}", detail=str(exc.reason)) from exc
         except TimeoutError as exc:

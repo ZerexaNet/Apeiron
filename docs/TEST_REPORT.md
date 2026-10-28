@@ -276,3 +276,31 @@ QT_QPA_PLATFORM=offscreen python tools/gui_smoke.py /tmp/gui-root
 python packaging/build_nuitka.py --output-dir dist
 xvfb-run -a python tools/e2e_minecraft.py --version 1.20.1 --data-dir /tmp/e2e
 ```
+
+## 13. PR #1 review remediation (2026-10-28)
+
+The follow-up repair covers the 35 inline review findings, including the previously
+outdated artifact-directory finding. Regression coverage is in
+`tests/test_review_regressions.py`; invalid historical modpack hash fixtures now contain
+real digests and successful loader installation is explicitly stubbed.
+
+Verified locally on Linux / Python 3.12 / PySide6 6.9.3:
+
+- C11 harness: 44 checks, 0 failures.
+- Ruff and mypy: clean after remediation.
+- Mirror mapping, priority, corrupt-source fallback, SHA-512-only downloads, streaming
+  downgrade rejection and OAuth HTTP 400 protocol states are exercised with controlled
+  responses rather than relying on live network availability.
+- Regression tests cover settings corruption, macOS classifier names, failed world
+  restore, symlink export, bounded overrides, legacy asset layouts, loader rollback,
+  content categories, CurseForge records, launch failures/session duration, managed Java
+  persistence, file URL conversion and shutdown settings.
+
+Historical sections above describe the previous revision. The latest macOS failure was
+identified as `Apeiron`/`apeiron` filesystem collision; Windows failed its otherwise
+successful package self-check because offscreen Qt did not discover the Windows fonts.
+Both causes are addressed in this revision. Cross-platform package results must be read
+from the follow-up PR's Actions runs; local Linux tests do not certify Windows/macOS.
+Live mirror reachability and a licensed Microsoft sign-in are not certified by these
+mocked protocol tests. The local network returned HTTP 503 for the bsmirror manifest
+probe. See `docs/DOWNLOAD_SOURCES.md` for routing and configuration.

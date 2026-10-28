@@ -264,7 +264,7 @@ class MicrosoftAuth:
             access_token=mc_token,
             user_type="msa",
             xuid=xuid,
-            client_id=self.client_id,
+            client_id=resolve_client_id(self.client_id),
             verified=True,
             expires_at=time.time() + expires_in,
             refresh_token=refresh_token,
@@ -355,10 +355,9 @@ class MicrosoftAuth:
                 method="POST",
                 data=body,
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
+                accepted_statuses=frozenset({400}) if allow_error_body else frozenset(),
             )
-        except NetworkError as exc:
-            if allow_error_body and "HTTP 400" in exc.message:
-                return {"error": "invalid_request", "error_description": exc.detail or ""}
+        except NetworkError:
             raise
         return response.json()
 

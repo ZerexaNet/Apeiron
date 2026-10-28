@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from apeiron.core.archive import is_within
+from apeiron.core.archive import extract_zip, is_within
 from apeiron.core.errors import ModpackError, SecurityError
 from apeiron.core.http import HttpClient
 from apeiron.core.logging import get_logger
@@ -100,25 +100,7 @@ def read_manifest(archive: Path) -> CurseForgeManifest:
 
 
 def extract_overrides(archive: Path, manifest: CurseForgeManifest, instance_dir: Path) -> int:
-    written = 0
-    root_name = manifest.overrides.strip("/")
-    with zipfile.ZipFile(archive) as zf:
-        for info in zf.infolist():
-            if info.is_dir():
-                continue
-            if not info.filename.startswith(root_name + "/"):
-                continue
-            relative = info.filename[len(root_name) + 1 :]
-            if not relative:
-                continue
-            target = (instance_dir / relative).resolve()
-            if not is_within(target, instance_dir.resolve()):
-                raise SecurityError(f"override path escapes the instance: {info.filename}")
-            target.parent.mkdir(parents=True, exist_ok=True)
-            with zf.open(info) as src, target.open("wb") as dst:
-                dst.write(src.read())
-            written += 1
-    return written
+    return len(extract_zip(archive, instance_dir, prefixes=(manifest.overrides,)))
 
 
 class CurseForgeClient:
@@ -137,7 +119,8 @@ class CurseForgeClient:
             raise ModpackError(
                 "CurseForge downloads require an API key",
                 hint=(
-                    "Add your own CurseForge API key in Settings. Apeiron does not ship a key "
+                    "Set the APEIRON_CURSEFORGE_API_KEY environment variable. "
+                    "Apeiron does not ship a key "
                     "and does not download CurseForge files from unofficial mirrors."
                 ),
             )

@@ -10,7 +10,6 @@ hard links that point outside the destination.
 from __future__ import annotations
 
 import os
-import shutil
 import tarfile
 import zipfile
 from collections.abc import Iterable
@@ -44,6 +43,7 @@ def extract_zip(
     *,
     members: Iterable[str] | None = None,
     max_total_bytes: int = 8 * 1024**3,
+    prefixes: tuple[str, ...] = (),
 ) -> list[Path]:
     """Extract a zip safely and return the written paths."""
     destination.mkdir(parents=True, exist_ok=True)
@@ -57,7 +57,20 @@ def extract_zip(
                     continue
                 if info.is_dir():
                     continue
-                target = _validate_member(info.filename, destination)
+                name = info.filename
+                if prefixes:
+                    prefix = next(
+                        (
+                            p.rstrip("/") + "/"
+                            for p in prefixes
+                            if name.startswith(p.rstrip("/") + "/")
+                        ),
+                        None,
+                    )
+                    if prefix is None:
+                        continue
+                    name = name[len(prefix) :]
+                target = _validate_member(name, destination)
                 mode = info.external_attr >> 16
                 if mode and (mode & 0o170000) == 0o120000:
                     raise PermissionError_(f"archive entry is a symlink: {info.filename}")
@@ -68,7 +81,12 @@ def extract_zip(
                     )
                 target.parent.mkdir(parents=True, exist_ok=True)
                 with zf.open(info) as src, target.open("wb") as dst:
-                    shutil.copyfileobj(src, dst)
+                    copied = 0
+                    while block := src.read(262144):
+                        copied += len(block)
+                        if copied > info.file_size or copied > max_total_bytes:
+                            raise ArchiveError("archive entry exceeds declared size")
+                        dst.write(block)
                 written.append(target)
     except zipfile.BadZipFile as exc:
         raise ArchiveError(f"not a valid zip archive: {archive.name}", detail=str(exc)) from exc
@@ -122,7 +140,7 @@ def zip_directory(
     tmp = target.with_suffix(target.suffix + ".part")
     with zipfile.ZipFile(tmp, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
         for path in sorted(source.rglob("*")):
-            if not path.is_file():
+            if not safe_source_file(path, source):
                 continue
             relative = path.relative_to(source).as_posix()
             if any(relative == e or relative.startswith(e + "/") for e in excluded):
@@ -141,3 +159,10 @@ def is_within(path: Path, parent: Path) -> bool:
     except OSError:
         return False
     return resolved == root or root in resolved.parents
+
+
+def safe_source_file(path: Path, root: Path) -> bool:
+    """Only export regular files whose entire path stays in the source tree."""
+    if path.is_symlink() or any((root / p).is_symlink() for p in path.relative_to(root).parents):
+        return False
+    return path.is_file() and is_within(path, root)

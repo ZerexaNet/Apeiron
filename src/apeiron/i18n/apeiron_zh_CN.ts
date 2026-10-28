@@ -229,100 +229,106 @@
 <context>
     <name>ContentPage</name>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="27" />
-        <location filename="../ui/qml/pages/ContentPage.qml" line="60" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="15" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="44" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="77" />
         <source>Import modpack</source>
         <translation>导入整合包</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="29" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="22" />
+        <source>Forge and NeoForge installation runs downloaded Java code. Continue only if you trust the loader.</source>
+        <translation>安装 Forge 和 NeoForge 会执行下载的 Java 代码。仅在信任该加载器时继续。</translation>
+    </message>
+    <message>
+        <location filename="../ui/qml/pages/ContentPage.qml" line="46" />
         <source>Modpacks (*.mrpack *.zip)</source>
         <translation>整合包 (*.mrpack *.zip)</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="29" />
-        <location filename="../ui/qml/pages/ContentPage.qml" line="37" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="46" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="54" />
         <source>All files (*)</source>
         <translation>所有文件 (*)</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="35" />
-        <location filename="../ui/qml/pages/ContentPage.qml" line="65" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="52" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="82" />
         <source>Add file</source>
         <translation>添加文件</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="37" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="54" />
         <source>Mods and packs (*.jar *.zip)</source>
         <translation>模组与整合包 (*.jar *.zip)</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="57" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="74" />
         <source>Content</source>
         <translation>内容</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="58" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="75" />
         <source>Mods, resource packs, shader packs and data packs for the selected instance.</source>
         <translation>管理所选实例的模组、资源包、光影包与数据包。</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="75" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="92" />
         <source>Select an instance</source>
         <translation>选择实例</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="76" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="93" />
         <source>Choose an instance in the library to manage its content.</source>
         <translation>在游戏库中选择实例以管理其内容。</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="99" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="116" />
         <source>Mods</source>
         <translation>模组</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="100" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="117" />
         <source>Resource packs</source>
         <translation>资源包</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="101" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="118" />
         <source>Shaders</source>
         <translation>光影</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="102" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="119" />
         <source>Data packs</source>
         <translation>数据包</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="107" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="124" />
         <source>Nothing installed in this category.</source>
         <translation>此分类下尚未安装任何内容。</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="135" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="152" />
         <source>Remove</source>
         <translation>移除</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="148" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="165" />
         <source>Mod loader</source>
         <translation>模组加载器</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="150" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="167" />
         <source>Current: %1</source>
         <translation>当前：%1</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="154" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="171" />
         <source>Forge and NeoForge installs run the vendor's official installer after verifying its published checksum.</source>
         <translation>安装 Forge 与 NeoForge 时会先校验官方公布的校验值，再运行厂商提供的官方安装器。</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="161" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="178" />
         <source>Open instance folder</source>
         <translation>打开实例目录</translation>
     </message>
@@ -523,8 +529,8 @@
     </message>
     <message>
         <location filename="../ui/qml/pages/LibraryPage.qml" line="48" />
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="307" />
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="323" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="305" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="321" />
         <source>New instance</source>
         <translation>新建实例</translation>
     </message>
@@ -579,89 +585,99 @@
         <translation>详情</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="197" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="195" />
         <source>Memory (MB)</source>
         <translation>内存（MB）</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="208" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="206" />
         <source>JVM arguments</source>
         <translation>JVM 参数</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="216" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="214" />
         <source>Resolution</source>
         <translation>分辨率</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="234" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="232" />
         <source>Save changes</source>
         <translation>保存修改</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="248" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="246" />
         <source>Install / verify files</source>
         <translation>安装 / 校验文件</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="255" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="253" />
         <source>Duplicate</source>
         <translation>复制</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="262" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="260" />
         <source>Backup worlds</source>
         <translation>备份存档</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="269" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="267" />
         <source>Export archive</source>
         <translation>导出压缩包</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="276" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="274" />
         <source>Delete instance</source>
         <translation>删除实例</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="291" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="289" />
         <source>Delete instance?</source>
         <translation>删除实例？</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="298" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="296" />
         <source>The instance directory and everything inside it will be removed. This cannot be undone.</source>
         <translation>实例目录及其中的所有内容都将被删除，且无法恢复。</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="318" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="316" />
         <source>Name</source>
         <translation>名称</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="322" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="320" />
         <source>My world</source>
         <translation>我的世界</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="326" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="324" />
         <source>Minecraft version</source>
         <translation>Minecraft 版本</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="336" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="334" />
         <source>Mod loader</source>
         <translation>模组加载器</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="341" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="339" />
         <source>Vanilla</source>
         <translation>原版</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="355" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="353" />
         <source>Loader versions are fetched from the projects' official metadata.</source>
         <translation>加载器版本来自各项目的官方元数据。</translation>
+    </message>
+    <message>
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="379" />
+        <source>Run loader installer?</source>
+        <translation>运行加载器安装程序？</translation>
+    </message>
+    <message>
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="386" />
+        <source>Forge and NeoForge installation runs downloaded Java code. Continue only if you trust the loader.</source>
+        <translation>安装 Forge 和 NeoForge 会执行下载的 Java 代码。仅在信任该加载器时继续。</translation>
     </message>
 </context>
 <context>

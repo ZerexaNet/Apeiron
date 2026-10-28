@@ -31,6 +31,9 @@ def _self_check() -> int:
     report: dict[str, object] = {"version": __version__, "checks": {}, "ok": False}
     checks: dict[str, object] = report["checks"]  # type: ignore[assignment]
 
+    from apeiron.ui.app import configure_platform_fonts
+
+    configure_platform_fonts()
     app = QGuiApplication.instance() or QGuiApplication([sys.argv[0]])
     app.setApplicationName("Apeiron")
     QQuickStyle.setStyle("Material")

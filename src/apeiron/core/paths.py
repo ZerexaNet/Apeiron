@@ -137,9 +137,11 @@ class AppPaths:
         """
         for directory in self.all_directories():
             try:
-                directory.mkdir(parents=True, exist_ok=True)
-                if os.name == "posix":
-                    os.chmod(directory, 0o700)
+                try:
+                    directory.mkdir(mode=0o700, parents=True, exist_ok=False)
+                except FileExistsError:
+                    if not directory.is_dir():
+                        raise
             except OSError as exc:  # pragma: no cover - depends on the host
                 raise OSError(f"cannot create {directory}: {exc}") from exc
 

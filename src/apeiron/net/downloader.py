@@ -25,7 +25,7 @@ import threading
 import time
 from collections.abc import Callable, Iterable, Sequence
 from concurrent.futures import Future, ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from apeiron.core.errors import (
@@ -57,6 +57,8 @@ class DownloadSpec:
     size: int = 0
     category: str = "other"
     task_id: str = ""
+    sha512: str = ""
+    fallback_urls: tuple[str, ...] = ()
 
     @property
     def key(self) -> str:
@@ -139,6 +141,7 @@ class DownloadManager:
         self.repo = repo
         self.progress_callback = progress_callback
         self.chunk_size = chunk_size
+        self._batch_lock = threading.Lock()
         self._cancel = threading.Event()
         self._lock = threading.Lock()
         self._progress = Progress()
@@ -161,6 +164,11 @@ class DownloadManager:
             self._progress.cancelled = False
 
     def run(self, specs: Sequence[DownloadSpec]) -> list[DownloadResult]:
+        # Serialize batches: cancellation and progress belong to the active batch.
+        with self._batch_lock:
+            return self._run_batch(specs)
+
+    def _run_batch(self, specs: Sequence[DownloadSpec]) -> list[DownloadResult]:
         """Download every spec, returning successes; failures are raised.
 
         The first failure cancels the remaining work and raises, so callers
@@ -199,6 +207,8 @@ class DownloadManager:
                     failures.append(
                         DownloadFailure(spec, str(exc) or "cancelled", error_code=exc.code)
                     )
+                    with self._lock:
+                        self._progress.failed_tasks += 1
                     self.cancel()
                 except (
                     DownloadError,
@@ -222,6 +232,9 @@ class DownloadManager:
                     self.cancel()
         finally:
             executor.shutdown(wait=True, cancel_futures=True)
+            with self._lock:
+                self._progress.failed_tasks = len(failures)
+            self._emit()
 
         if failures:
             first = failures[0]
@@ -260,13 +273,29 @@ class DownloadManager:
 
         for attempt in range(1, self.retries + 2):
             try:
-                written = self._stream_to_part(spec, part)
-                self._verify(part, spec)
+                urls: list[str] = []
+                for original in (spec.url, *spec.fallback_urls):
+                    candidates = (
+                        self.http.candidates(original)
+                        if hasattr(self.http, "candidates")
+                        else (original,)
+                    )
+                    urls.extend(u for u in candidates if u not in urls)
+                for position, url in enumerate(urls):
+                    attempt_spec = replace(spec, url=url)
+                    try:
+                        written = self._stream_to_part(attempt_spec, part)
+                        self._verify(part, spec)
+                        break
+                    except (NetworkError, IntegrityError, OSError):
+                        self._rollback_bytes(part)
+                        part.unlink(missing_ok=True)
+                        if position == len(urls) - 1:
+                            raise
                 self._commit(part, destination)
                 elapsed = time.monotonic() - started
                 with self._lock:
                     self._progress.completed_tasks += 1
-                    self._progress.bytes_done += spec.size or written
                 self._emit()
                 self._task_finish(task, "completed", written)
                 log.info("downloaded %s (%d bytes, %.2fs)", destination.name, written, elapsed)
@@ -274,6 +303,7 @@ class DownloadManager:
                     spec=spec, path=destination, bytes_written=written, seconds=elapsed
                 )
             except CancelledError:
+                self._rollback_bytes(part)
                 part.unlink(missing_ok=True)
                 self._task_finish(task, "cancelled", 0)
                 raise
@@ -315,10 +345,15 @@ class DownloadManager:
 
         raise DownloadError(f"failed to download {destination.name}", detail=str(last_error))
 
+    def _rollback_bytes(self, part: Path) -> None:
+        size = part.stat().st_size if part.exists() else 0
+        with self._lock:
+            self._progress.bytes_done = max(0, self._progress.bytes_done - size)
+            self._update_speed()
+
     def _stream_to_part(self, spec: DownloadSpec, part: Path) -> int:
         part.parent.mkdir(parents=True, exist_ok=True)
         written = 0
-        hasher = hashlib.sha1()
         with self._lock:
             self._progress.current_file = spec.destination.name
         self._emit()
@@ -328,7 +363,6 @@ class DownloadManager:
                     if self._cancel.is_set():
                         raise CancelledError("download cancelled")
                     handle.write(chunk)
-                    hasher.update(chunk)
                     written += len(chunk)
                     with self._lock:
                         self._progress.bytes_done += len(chunk)
@@ -342,7 +376,6 @@ class DownloadManager:
             if exc.errno == errno.ENOSPC:
                 raise DiskSpaceError(f"no space left on device for {part.parent}") from exc
             raise
-        self._stream_hasher = hasher  # type: ignore[attr-defined]
         return written
 
     def _verify(self, part: Path, spec: DownloadSpec) -> None:
@@ -351,17 +384,17 @@ class DownloadManager:
                 f"size mismatch for {spec.destination.name}",
                 detail=f"expected {spec.size}, got {part.stat().st_size}",
             )
-        if spec.sha1:
-            digest = hashlib.sha1()
-            with part.open("rb") as handle:
-                for block in iter(lambda: handle.read(1024 * 1024), b""):
-                    digest.update(block)
-            actual = digest.hexdigest()
-            if actual.lower() != spec.sha1.lower():
-                raise IntegrityError(
-                    f"checksum mismatch for {spec.destination.name}",
-                    detail=f"expected {spec.sha1}, got {actual}",
-                )
+        for algorithm in ("sha1", "sha512"):
+            expected = getattr(spec, algorithm)
+            if expected:
+                digest = hashlib.new(algorithm)
+                with part.open("rb") as handle:
+                    for block in iter(lambda: handle.read(1024 * 1024), b""):
+                        digest.update(block)
+                if digest.hexdigest().lower() != expected.lower():
+                    raise IntegrityError(
+                        f"{algorithm} checksum mismatch for {spec.destination.name}"
+                    )
 
     @staticmethod
     def _commit(part: Path, destination: Path) -> None:
@@ -383,12 +416,12 @@ class DownloadManager:
         size = destination.stat().st_size
         if spec.size and size != spec.size:
             return False
-        if spec.sha1:
-            digest = hashlib.sha1()
-            with destination.open("rb") as handle:
-                for block in iter(lambda: handle.read(1024 * 1024), b""):
-                    digest.update(block)
-            return digest.hexdigest().lower() == spec.sha1.lower()
+        if spec.sha1 or spec.sha512:
+            try:
+                self._verify(destination, spec)
+            except IntegrityError:
+                return False
+            return True
         return bool(spec.size)
 
     def _validate_destination(self, destination: Path, size: int) -> None:
