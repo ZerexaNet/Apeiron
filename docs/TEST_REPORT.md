@@ -276,3 +276,54 @@ QT_QPA_PLATFORM=offscreen python tools/gui_smoke.py /tmp/gui-root
 python packaging/build_nuitka.py --output-dir dist
 xvfb-run -a python tools/e2e_minecraft.py --version 1.20.1 --data-dir /tmp/e2e
 ```
+
+## 13. PR #1 review remediation (2026-10-28)
+
+The follow-up repair covers the 35 inline review findings, including the previously
+outdated artifact-directory finding. Regression coverage is in
+`tests/test_review_regressions.py`; invalid historical modpack hash fixtures now contain
+real digests and successful loader installation is explicitly stubbed.
+
+Verified locally on Linux / Python 3.12 / PySide6 6.9.3:
+
+- C11 harness: 44 checks, 0 failures.
+- Pytest: 217 passed, including 45 new regression cases and the headless GUI smoke.
+- Ruff and mypy: clean after remediation.
+- Mirror mapping, priority, corrupt-source fallback, SHA-512-only downloads, streaming
+  downgrade rejection and OAuth HTTP 400 protocol states are exercised with controlled
+  responses rather than relying on live network availability.
+- Regression tests cover settings corruption, macOS classifier names, failed world
+  restore, symlink export, bounded overrides, legacy asset layouts, loader rollback,
+  content categories, CurseForge records, launch failures/session duration, managed Java
+  persistence, file URL conversion and shutdown settings.
+
+Historical sections above describe the previous revision. The latest macOS failure was
+identified as `Apeiron`/`apeiron` filesystem collision; Windows failed its otherwise
+successful package self-check because offscreen Qt did not discover the Windows fonts.
+Both causes are addressed in this revision. Cross-platform package results must be read
+from the follow-up PR's Actions runs; local Linux tests do not certify Windows/macOS.
+Online spot checks reached the mirror.hkmc.online and BMCLAPI version manifests (921
+entries each), then fetched Minecraft 1.20.1 version JSON and a 1,330,045-byte library
+with checksum verification. bsmirror returned 503 or timed out in this environment.
+The probe exposed already-rewritten mirror URLs in manifest entries; those now retain
+the full priority chain and a reconstructed official fallback (three additional tests).
+A licensed Microsoft sign-in and sustained mirror availability are not certified.
+The local Nuitka build reached GCC but could not link because this environment's Python
+runtime lacks its referenced `lib/libpython3.12.so`; hosted packaging is checked separately.
+See `docs/DOWNLOAD_SOURCES.md` for routing and configuration.
+
+
+The first follow-up package run passed Linux and Windows, and macOS successfully
+compiled and loaded its native extension, QML, translations and database. Its strict
+self-check then caught an absent default `Sans Serif` family. Self-check now calls the
+same installed-font selection routine as normal GUI startup, rather than suppressing
+the warning. The corresponding follow-up Actions run validates the final package.
+
+The next macOS self-check confirmed the UI font repair and exposed the log page's
+hardcoded `Monospace` family. That page now uses Qt's system fixed-font family through
+the backend; neither of the missing-family warnings is whitelisted.
+
+Qt offscreen can return the generic uninstalled name even from `systemFont(FixedFont)`
+(reproduced locally as `monospace`, absent from the installed family list). The log-font
+selection therefore checks installed families and explicitly selects a fixed-pitch face
+when needed. The GUI smoke checks this installed-font contract on the host.

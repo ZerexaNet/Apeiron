@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from apeiron.core.archive import is_within
+from apeiron.core.archive import extract_zip, is_within, safe_source_file
 from apeiron.core.errors import ModpackError, SecurityError
 from apeiron.core.logging import get_logger
 from apeiron.net.downloader import DownloadManager, DownloadSpec
@@ -50,6 +50,16 @@ class MrpackFile:
             raise ModpackError("a modpack file entry has no path")
         if not downloads:
             raise ModpackError(f"modpack file {path} has no download URL")
+        for algorithm, length in (("sha1", 40), ("sha512", 128)):
+            digest = hashes.get(algorithm)
+            if digest and (
+                not isinstance(digest, str)
+                or len(digest) != length
+                or any(c not in "0123456789abcdefABCDEF" for c in digest)
+            ):
+                raise ModpackError(f"invalid {algorithm} digest for {path}")
+        if not hashes.get("sha1") and not hashes.get("sha512"):
+            raise ModpackError(f"modpack file {path} declares no checksum")
         env = raw.get("env") or {}
         side = str(env.get("client", "required"))
         return cls(
@@ -63,7 +73,7 @@ class MrpackFile:
 
     def is_safe_path(self) -> bool:
         pure = PurePosixPath(self.path)
-        if pure.is_absolute() or ".." in pure.parts:
+        if pure.is_absolute() or ".." in pure.parts or "\\" in self.path or ":" in self.path:
             return False
         # Modrinth paths are relative to the instance root.
         return bool(pure.parts)
@@ -148,26 +158,7 @@ def read_mrpack(archive: Path) -> MrpackContents:
 
 def extract_overrides(archive: Path, instance_dir: Path) -> int:
     """Copy override trees into the instance, rejecting path traversal."""
-    written = 0
-    instance_root = instance_dir.resolve()
-    with zipfile.ZipFile(archive) as zf:
-        for info in zf.infolist():
-            if info.is_dir():
-                continue
-            parts = PurePosixPath(info.filename).parts
-            if not parts or parts[0] not in OVERRIDE_DIRS:
-                continue
-            relative = PurePosixPath(*parts[1:])
-            if ".." in relative.parts or relative.is_absolute():
-                raise SecurityError(f"override path escapes the instance: {info.filename}")
-            target = (instance_dir / relative).resolve()
-            if not is_within(target, instance_root):
-                raise SecurityError(f"override path escapes the instance: {info.filename}")
-            target.parent.mkdir(parents=True, exist_ok=True)
-            with zf.open(info) as src, target.open("wb") as dst:
-                dst.write(src.read())
-            written += 1
-    return written
+    return len(extract_zip(archive, instance_dir, prefixes=OVERRIDE_DIRS))
 
 
 def download_specs(index: MrpackIndex, instance_dir: Path) -> list[DownloadSpec]:
@@ -184,6 +175,8 @@ def download_specs(index: MrpackIndex, instance_dir: Path) -> list[DownloadSpec]
                 url=entry.downloads[0],
                 destination=destination,
                 sha1=entry.sha1,
+                sha512=entry.sha512,
+                fallback_urls=tuple(entry.downloads[1:]),
                 size=entry.size,
                 category="modpack",
             )
@@ -214,6 +207,7 @@ def export_mrpack(
     files: Iterable[dict[str, Any]],
     summary: str = "",
     overrides_dir: Path | None = None,
+    overrides_prefix: str = "",
 ) -> Path:
     """Write a ``.mrpack`` from already-known file metadata."""
     dependencies: dict[str, str] = {"minecraft": mc_version}
@@ -237,9 +231,11 @@ def export_mrpack(
         zf.writestr(INDEX_NAME, json.dumps(index, indent=2, ensure_ascii=False))
         if overrides_dir and overrides_dir.exists():
             for path in sorted(overrides_dir.rglob("*")):
-                if path.is_file():
-                    arcname = PurePosixPath("overrides") / PurePosixPath(
-                        path.relative_to(overrides_dir).as_posix()
+                if safe_source_file(path, overrides_dir):
+                    arcname = (
+                        PurePosixPath("overrides")
+                        / overrides_prefix
+                        / PurePosixPath(path.relative_to(overrides_dir).as_posix())
                     )
                     zf.write(path, str(arcname))
     log.info("exported modpack %s (%d files)", target.name, len(index["files"]))

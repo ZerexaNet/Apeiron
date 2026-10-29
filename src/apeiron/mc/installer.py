@@ -15,6 +15,7 @@ from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from apeiron.core.archive import _validate_member
 from apeiron.core.errors import ArchiveError, ConfigError, PermissionError_
 from apeiron.core.logging import get_logger
 from apeiron.core.paths import AppPaths, current_platform_key
@@ -264,7 +265,9 @@ class JavaInstaller:
         seen: set[str] = set()
         for _name, entry in (payload.get("objects") or {}).items():
             digest = str(entry.get("hash") or "")
-            if not digest or digest in seen:
+            if len(digest) != 40 or any(c not in "0123456789abcdef" for c in digest):
+                raise ConfigError("asset index contains an invalid object hash")
+            if digest in seen:
                 continue
             seen.add(digest)
             specs.append(
@@ -290,6 +293,31 @@ class JavaInstaller:
                     total=len(specs),
                 )
             )
+
+        for name, entry in (payload.get("objects") or {}).items():
+            digest = str(entry.get("hash") or "")
+            source = objects_root / digest[:2] / digest
+            if not source.is_file():
+                continue
+            roots = []
+            if payload.get("virtual"):
+                roots.append(self.paths.assets / "virtual" / descriptor.assets)
+            if payload.get("map_to_resources"):
+                roots.append(self.paths.assets / "resources" / descriptor.assets)
+            for root in roots:
+                target = _validate_member(name, root)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, target)
+
+    def materialize_resources(self, installed: InstalledVersion, instance_dir: Path) -> None:
+        source = self.paths.assets / "resources" / installed.asset_index
+        if source.is_dir():
+            for path in source.rglob("*"):
+                if path.is_file():
+                    relative = path.relative_to(source).as_posix()
+                    target = _validate_member(relative, instance_dir / "resources")
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(path, target)
 
     def _install_logging_config(self, descriptor: VersionDescriptor) -> None:
         artifact = descriptor.logging_config()

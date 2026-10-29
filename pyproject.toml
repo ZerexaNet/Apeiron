@@ -23,7 +23,7 @@ classifiers = [
     "Programming Language :: C",
     "Topic :: Games/Entertainment",
 ]
-dependencies = ["PySide6-Essentials>=6.7,<6.10"]
+dependencies = ["PySide6-Essentials>=6.8,<6.10", "PySide6-Addons>=6.8,<6.10"]
 
 [project.optional-dependencies]
 dev = [
@@ -51,7 +51,7 @@ zip-safe = false
 where = ["src"]
 
 [tool.setuptools.package-data]
-apeiron = ["qml/**/*.qml", "qml/**/qmldir", "i18n/*.qm", "i18n/*.ts", "resources/*"]
+apeiron = ["ui/qml/**/*.qml", "ui/qml/**/qmldir", "i18n/*.qm", "i18n/*.ts", "resources/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -33,6 +33,7 @@ from apeiron.core.logging import get_logger
 from apeiron.core.paths import AppPaths
 from apeiron.loaders.base import LoaderInstallResult, LoaderVersion, write_version_json
 from apeiron.mc.manifest import VersionManifest
+from apeiron.net.downloader import DownloadManager, DownloadSpec
 
 log = get_logger("forge")
 
@@ -101,7 +102,7 @@ class _InstallerJarLoader:
         with tempfile.TemporaryDirectory(prefix=f"apeiron-{self.name}-") as tmp:
             work = Path(tmp)
             installer = work / "installer.jar"
-            self._download(url, installer)
+            self._download(url, installer, checksum)
             actual = _sha1(installer)
             if actual.lower() != checksum.lower():
                 raise LoaderError(
@@ -143,13 +144,10 @@ class _InstallerJarLoader:
         candidate = text.split()[0] if text else ""
         return candidate.lower() if len(candidate) == 40 else ""
 
-    def _download(self, url: str, target: Path) -> None:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        tmp = target.with_suffix(".part")
-        with tmp.open("wb") as handle:
-            for chunk in self.http.stream(url):
-                handle.write(chunk)
-        tmp.replace(target)
+    def _download(self, url: str, target: Path, checksum: str = "") -> None:
+        DownloadManager(self.http).download(
+            DownloadSpec(url=url, destination=target, sha1=checksum, category="loader")
+        )
 
     def _seed_vanilla(self, mc_version: str, launcher_dir: Path) -> None:
         """Installers require the vanilla version JSON to be present."""
@@ -304,7 +302,7 @@ class NeoForgeLoader(_InstallerJarLoader):
         all_versions = [node.text.strip() for node in root.iter("version") if node.text]
         # NeoForge 20.4.x targets MC 1.20.4, 21.1.x targets 1.21.1, ...
         parts = mc_version.split(".")
-        prefix = f"{parts[1]}.{parts[2]}" if len(parts) >= 3 else ""
+        prefix = f"{parts[1]}.{parts[2] if len(parts) >= 3 else '0'}" if len(parts) >= 2 else ""
         matching = [v for v in all_versions if prefix and v.startswith(prefix + ".")]
         return [
             LoaderVersion(loader=self.name, version=version, mc_version=mc_version)

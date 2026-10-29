@@ -81,7 +81,11 @@ def _split_extra(value: str) -> list[str]:
     import shlex
 
     try:
-        return shlex.split(value, posix=True)
+        lexer = shlex.shlex(value, posix=True)
+        lexer.whitespace_split = True
+        lexer.commenters = ""
+        lexer.escape = ""
+        return list(lexer)
     except ValueError:
         return value.split()
 
@@ -115,7 +119,7 @@ def build_command(installed: InstalledVersion, options: LaunchOptions) -> list[s
         "library_directory": str(installed.libraries_root),
         "resolution_width": str(options.width),
         "resolution_height": str(options.height),
-        "game_assets": str(installed.assets_root / "virtual" / "legacy"),
+        "game_assets": str(installed.assets_root / "virtual" / installed.asset_index),
         "quickPlayPath": "",
         "quickPlaySingleplayer": options.quick_play_singleplayer,
         "quickPlayMultiplayer": options.quick_play_multiplayer,

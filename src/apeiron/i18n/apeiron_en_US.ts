@@ -229,100 +229,106 @@
 <context>
     <name>ContentPage</name>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="27" />
-        <location filename="../ui/qml/pages/ContentPage.qml" line="60" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="15" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="44" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="77" />
         <source>Import modpack</source>
         <translation>Import modpack</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="29" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="22" />
+        <source>Forge and NeoForge installation runs downloaded Java code. Continue only if you trust the loader.</source>
+        <translation>Forge and NeoForge installation runs downloaded Java code. Continue only if you trust the loader.</translation>
+    </message>
+    <message>
+        <location filename="../ui/qml/pages/ContentPage.qml" line="46" />
         <source>Modpacks (*.mrpack *.zip)</source>
         <translation>Modpacks (*.mrpack *.zip)</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="29" />
-        <location filename="../ui/qml/pages/ContentPage.qml" line="37" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="46" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="54" />
         <source>All files (*)</source>
         <translation>All files (*)</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="35" />
-        <location filename="../ui/qml/pages/ContentPage.qml" line="65" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="52" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="82" />
         <source>Add file</source>
         <translation>Add file</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="37" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="54" />
         <source>Mods and packs (*.jar *.zip)</source>
         <translation>Mods and packs (*.jar *.zip)</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="57" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="74" />
         <source>Content</source>
         <translation>Content</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="58" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="75" />
         <source>Mods, resource packs, shader packs and data packs for the selected instance.</source>
         <translation>Mods, resource packs, shader packs and data packs for the selected instance.</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="75" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="92" />
         <source>Select an instance</source>
         <translation>Select an instance</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="76" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="93" />
         <source>Choose an instance in the library to manage its content.</source>
         <translation>Choose an instance in the library to manage its content.</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="99" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="116" />
         <source>Mods</source>
         <translation>Mods</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="100" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="117" />
         <source>Resource packs</source>
         <translation>Resource packs</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="101" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="118" />
         <source>Shaders</source>
         <translation>Shaders</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="102" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="119" />
         <source>Data packs</source>
         <translation>Data packs</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="107" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="124" />
         <source>Nothing installed in this category.</source>
         <translation>Nothing installed in this category.</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="135" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="152" />
         <source>Remove</source>
         <translation>Remove</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="148" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="165" />
         <source>Mod loader</source>
         <translation>Mod loader</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="150" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="167" />
         <source>Current: %1</source>
         <translation>Current: %1</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="154" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="171" />
         <source>Forge and NeoForge installs run the vendor's official installer after verifying its published checksum.</source>
         <translation>Forge and NeoForge installs run the vendor's official installer after verifying its published checksum.</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/ContentPage.qml" line="161" />
+        <location filename="../ui/qml/pages/ContentPage.qml" line="178" />
         <source>Open instance folder</source>
         <translation>Open instance folder</translation>
     </message>
@@ -523,8 +529,8 @@
     </message>
     <message>
         <location filename="../ui/qml/pages/LibraryPage.qml" line="48" />
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="307" />
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="323" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="305" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="321" />
         <source>New instance</source>
         <translation>New instance</translation>
     </message>
@@ -579,89 +585,99 @@
         <translation>Details</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="197" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="195" />
         <source>Memory (MB)</source>
         <translation>Memory (MB)</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="208" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="206" />
         <source>JVM arguments</source>
         <translation>JVM arguments</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="216" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="214" />
         <source>Resolution</source>
         <translation>Resolution</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="234" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="232" />
         <source>Save changes</source>
         <translation>Save changes</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="248" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="246" />
         <source>Install / verify files</source>
         <translation>Install / verify files</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="255" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="253" />
         <source>Duplicate</source>
         <translation>Duplicate</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="262" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="260" />
         <source>Backup worlds</source>
         <translation>Backup worlds</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="269" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="267" />
         <source>Export archive</source>
         <translation>Export archive</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="276" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="274" />
         <source>Delete instance</source>
         <translation>Delete instance</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="291" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="289" />
         <source>Delete instance?</source>
         <translation>Delete instance?</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="298" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="296" />
         <source>The instance directory and everything inside it will be removed. This cannot be undone.</source>
         <translation>The instance directory and everything inside it will be removed. This cannot be undone.</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="318" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="316" />
         <source>Name</source>
         <translation>Name</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="322" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="320" />
         <source>My world</source>
         <translation>My world</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="326" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="324" />
         <source>Minecraft version</source>
         <translation>Minecraft version</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="336" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="334" />
         <source>Mod loader</source>
         <translation>Mod loader</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="341" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="339" />
         <source>Vanilla</source>
         <translation>Vanilla</translation>
     </message>
     <message>
-        <location filename="../ui/qml/pages/LibraryPage.qml" line="355" />
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="353" />
         <source>Loader versions are fetched from the projects' official metadata.</source>
         <translation>Loader versions are fetched from the projects' official metadata.</translation>
+    </message>
+    <message>
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="379" />
+        <source>Run loader installer?</source>
+        <translation>Run loader installer?</translation>
+    </message>
+    <message>
+        <location filename="../ui/qml/pages/LibraryPage.qml" line="386" />
+        <source>Forge and NeoForge installation runs downloaded Java code. Continue only if you trust the loader.</source>
+        <translation>Forge and NeoForge installation runs downloaded Java code. Continue only if you trust the loader.</translation>
     </message>
 </context>
 <context>

@@ -3,6 +3,7 @@ name: Build
 on:
   push:
     tags: ["v*"]
+    branches: ["main"]
   pull_request:
     paths:
       - "src/**"
@@ -41,6 +42,7 @@ jobs:
           - os: windows-2022
             artifact: apeiron-windows-x86_64
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -63,7 +65,8 @@ jobs:
         run: |
           # The standalone directory is named after the compiled entry script,
           # so locate the binary instead of hard-coding it.
-          BIN=$(find dist -maxdepth 2 -type f -name "Apeiron*" | head -1)
+          set -euo pipefail
+          BIN=$(find dist -maxdepth 2 -type f -name "ApeironLauncher*" | head -1)
           test -n "$BIN" || { echo "no artifact produced"; ls -R dist | head -50; exit 1; }
           echo "artifact: $BIN"
           "$BIN" --version
@@ -101,3 +104,29 @@ jobs:
           path: out/*
           if-no-files-found: error
           retention-days: 14
+
+  release:
+    name: Publish release archives
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: package
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: apeiron-*
+          path: release-artifacts
+          merge-multiple: true
+      - name: Publish verified packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" release-artifacts/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" release-artifacts/* --verify-tag --generate-notes
+          fi

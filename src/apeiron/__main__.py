@@ -31,6 +31,9 @@ def _self_check() -> int:
     report: dict[str, object] = {"version": __version__, "checks": {}, "ok": False}
     checks: dict[str, object] = report["checks"]  # type: ignore[assignment]
 
+    from apeiron.ui.app import configure_platform_fonts
+
+    configure_platform_fonts()
     app = QGuiApplication.instance() or QGuiApplication([sys.argv[0]])
     app.setApplicationName("Apeiron")
     QQuickStyle.setStyle("Material")
@@ -47,7 +50,7 @@ def _self_check() -> int:
     from PySide6.QtCore import QtMsgType, qInstallMessageHandler
 
     from apeiron.services.app_context import build_context
-    from apeiron.ui.app import create_engine
+    from apeiron.ui.app import _configure_font, create_engine
 
     # Collect Qt/QML diagnostics emitted while the interface is constructed so
     # that a broken QML binding fails the check instead of scrolling past.
@@ -58,6 +61,7 @@ def _self_check() -> int:
             messages.append(message)
 
     qInstallMessageHandler(_handler)
+    _configure_font(app)
 
     context = build_context()
     checks["database"] = {

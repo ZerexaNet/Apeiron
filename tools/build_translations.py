@@ -132,6 +132,8 @@ ZH: dict[str, str] = {
     "Game library": "游戏库",
     "Every instance has its own directory, mods, settings and account.": "每个实例都有独立的目录、模组、设置与账户。",
     "New instance": "新建实例",
+    "Run loader installer?": "运行加载器安装程序？",
+    "Forge and NeoForge installation runs downloaded Java code. Continue only if you trust the loader.": "安装 Forge 和 NeoForge 会执行下载的 Java 代码。仅在信任该加载器时继续。",
     "Import": "导入",
     "Your library is empty": "游戏库为空",
     "Create an instance to download Minecraft and start playing.": "创建一个实例以下载 Minecraft 并开始游戏。",

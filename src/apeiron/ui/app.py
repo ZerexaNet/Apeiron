@@ -63,6 +63,14 @@ def _configure_font(app: QGuiApplication) -> None:
     app.setFont(font)
 
 
+def configure_platform_fonts() -> None:
+    """Give offscreen Qt access to fonts installed with Windows."""
+    if sys.platform == "win32" and "QT_QPA_FONTDIR" not in os.environ:
+        fonts = Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts"
+        if fonts.is_dir():
+            os.environ["QT_QPA_FONTDIR"] = str(fonts)
+
+
 def create_engine(
     context: AppContext, *, qml_dir: Path | None = None
 ) -> tuple[QQmlApplicationEngine, Backend]:
@@ -108,6 +116,7 @@ def run(argv: Sequence[str] | None = None) -> int:
     QCoreApplication.setAttribute("Qt.AA_UseHighDpiPixmaps", True) if hasattr(
         QCoreApplication, "AA_UseHighDpiPixmaps"
     ) else None
+    configure_platform_fonts()
     app = QGuiApplication(argv)
     app.setApplicationName("Apeiron")
     app.setApplicationDisplayName("Apeiron")
@@ -139,7 +148,8 @@ def _shutdown(context: AppContext, backend: Backend | None = None) -> None:
         # before the engine and its objects are destroyed.
         backend.shutdown()
     try:
-        context.launcher.stop()
+        if context.settings.close_game_on_launcher_exit:
+            context.launcher.stop()
     except Exception:
         pass
     try:

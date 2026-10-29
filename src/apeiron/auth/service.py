@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from apeiron.auth.base import Session
-from apeiron.auth.microsoft import DeviceCodeInfo, MicrosoftAuth
+from apeiron.auth.microsoft import DeviceCodeInfo, MicrosoftAuth, resolve_client_id
 from apeiron.auth.offline import create_offline_profile, rename_profile, validate_name
 from apeiron.auth.store import CredentialStore, StoreInfo, store_info
 from apeiron.core.errors import AccountError, AuthExpiredError
@@ -176,7 +176,7 @@ class AccountService:
             access_token=str(stored.get("access_token", "")),
             user_type="msa",
             xuid=str(stored.get("xuid", account.microsoft_id)),
-            client_id=self.microsoft.client_id,
+            client_id=resolve_client_id(self.microsoft.client_id),
             verified=True,
             expires_at=float(stored.get("expires_at", 0)),
             refresh_token=str(stored.get("refresh_token", "")),

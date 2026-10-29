@@ -15,6 +15,7 @@ from __future__ import annotations
 import builtins
 import json
 import shutil
+import tempfile
 import zipfile
 from dataclasses import dataclass
 from datetime import datetime
@@ -246,9 +247,19 @@ class InstanceManager:
         # The previous worlds are moved next to (not inside) `saves`, so the
         # archive can be extracted into a clean directory.
         existing = directory / f"_pre-restore-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
-        if saves.exists():
-            shutil.move(str(saves), str(existing))
-        written = extract_zip(backup, saves)
+        with tempfile.TemporaryDirectory(prefix="restore-", dir=directory) as staging:
+            staged = Path(staging) / "saves"
+            written = extract_zip(backup, staged)
+            moved = saves.exists()
+            if moved:
+                existing = directory / f"_pre-restore-{new_id()}"
+                saves.replace(existing)
+            try:
+                staged.replace(saves)
+            except BaseException:
+                if moved:
+                    existing.replace(saves)
+                raise
         log.info("restored %d files from %s", len(written), backup.name)
         return len(written)
 
@@ -359,6 +370,11 @@ def instance_summary(instance: Instance, size: int | None = None) -> dict[str, A
         "loaderVersion": instance.loader_version,
         "loaderLabel": instance.display_loader,
         "memoryMb": instance.memory_mb,
+        "jvmArgs": instance.jvm_args,
+        "gameArgs": instance.game_args,
+        "width": instance.width,
+        "height": instance.height,
+        "directory": instance.directory,
         "accountId": instance.account_id or "",
         "lastPlayed": instance.last_played_at or "",
         "playCount": instance.play_count,

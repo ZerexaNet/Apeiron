@@ -69,7 +69,7 @@ def texts_of(root) -> list[str]:
 
 def main(data_dir: str) -> int:
     from PySide6.QtCore import QtMsgType, qInstallMessageHandler
-    from PySide6.QtGui import QGuiApplication
+    from PySide6.QtGui import QFontDatabase, QGuiApplication
     from PySide6.QtQuick import QQuickItem
     from PySide6.QtQuickControls2 import QQuickStyle
 
@@ -97,6 +97,12 @@ def main(data_dir: str) -> int:
     context = build_context()
     engine, backend = create_engine(context)
     roots = engine.rootObjects()
+    fixed_family = backend.fixedFontFamily
+    check(
+        "font.fixed_installed",
+        fixed_family in QFontDatabase.families() and QFontDatabase.isFixedPitch(fixed_family),
+        fixed_family,
+    )
     check("window.loaded", len(roots) == 1, f"roots={len(roots)}")
     if not roots:
         print(json.dumps(RESULT, ensure_ascii=False))

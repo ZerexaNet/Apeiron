@@ -135,7 +135,7 @@ Item {
                     spacing: 8
                     Button { text: qsTr("Install Java 17"); onClicked: App.installJava(17) }
                     Button { text: qsTr("Install Java 21"); onClicked: App.installJava(21) }
-                    Button { text: qsTr("Re-scan"); flat: true; onClicked: App.detectJava() }
+                    Button { text: qsTr("Re-scan"); flat: true; onClicked: App.detect_java() }
                 }
             }
 
@@ -158,7 +158,7 @@ Item {
                         checked: App.settings.showSnapshots
                         onToggled: App.setSetting("show_snapshots", checked)
                     }
-                    Button { text: qsTr("Refresh versions"); flat: true; onClicked: App.loadVersions(false) }
+                    Button { text: qsTr("Refresh versions"); flat: true; onClicked: App.load_versions(false) }
                 }
             }
 

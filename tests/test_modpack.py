@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import zipfile
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -54,7 +56,10 @@ def test_read_mrpack(tmp_path: Path):
         [
             {
                 "path": "mods/example.jar",
-                "hashes": {"sha1": "abc", "sha512": "def"},
+                "hashes": {
+                    "sha1": hashlib.sha1(PAYLOAD).hexdigest(),
+                    "sha512": hashlib.sha512(PAYLOAD).hexdigest(),
+                },
                 "downloads": ["https://cdn.modrinth.com/example.jar"],
                 "fileSize": 100,
             }
@@ -74,7 +79,7 @@ def test_mrpack_rejects_traversal(tmp_path: Path):
         [
             {
                 "path": "../../escape.jar",
-                "hashes": {"sha1": "abc"},
+                "hashes": {"sha1": hashlib.sha1(PAYLOAD).hexdigest()},
                 "downloads": ["https://x/y.jar"],
                 "fileSize": 1,
             }
@@ -104,13 +109,13 @@ def test_extract_overrides_only_from_override_tree(tmp_path: Path):
     assert (target / "mods" / "x.jar").read_bytes() == b"binary"
 
 
-def test_import_mrpack_creates_instance(tmp_path: Path, repos, app_paths):
+def test_import_mrpack_creates_instance(tmp_path: Path, repos, app_paths, monkeypatch):
     archive = _write_mrpack(
         tmp_path / "pack.mrpack",
         [
             {
                 "path": "mods/fabric-api.jar",
-                "hashes": {"sha1": "abc"},
+                "hashes": {"sha1": hashlib.sha1(PAYLOAD).hexdigest()},
                 "downloads": ["https://cdn.modrinth.com/a.jar"],
                 "fileSize": len(PAYLOAD),
             }
@@ -126,6 +131,11 @@ def test_import_mrpack_creates_instance(tmp_path: Path, repos, app_paths):
         downloader,
         http=None,
         paths=app_paths,
+    )
+    monkeypatch.setattr(
+        service.loaders["fabric"],
+        "install",
+        lambda *args, **kwargs: SimpleNamespace(version_id="fabric-test"),
     )
     result = service.import_archive(archive)
     assert result.format == "mrpack"
@@ -229,7 +239,10 @@ def test_export_mrpack_is_valid(tmp_path: Path):
         files=[
             {
                 "path": "mods/a.jar",
-                "hashes": {"sha1": "abc", "sha512": "def"},
+                "hashes": {
+                    "sha1": hashlib.sha1(PAYLOAD).hexdigest(),
+                    "sha512": hashlib.sha512(PAYLOAD).hexdigest(),
+                },
                 "downloads": ["https://cdn.modrinth.com/a.jar"],
                 "fileSize": 10,
                 "env": {"client": "required", "server": "optional"},

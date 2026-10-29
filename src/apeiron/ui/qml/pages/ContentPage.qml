@@ -7,6 +7,22 @@ import Apeiron.Components 1.0
 Item {
     id: page
 
+    property string pendingPack: ""
+    Dialog {
+        id: packConsent
+        implicitWidth: 460
+        implicitHeight: 240
+        title: qsTr("Import modpack")
+        modal: true
+        anchors.centerIn: parent
+        standardButtons: Dialog.Cancel | Dialog.Ok
+        Label {
+            width: 400
+            wrapMode: Text.WordWrap
+            text: qsTr("Forge and NeoForge installation runs downloaded Java code. Continue only if you trust the loader.")
+        }
+        onAccepted: App.importModpack(page.pendingPack, true)
+    }
     property var items: []
     property string kindFilter: "mod"
 
@@ -18,6 +34,7 @@ Item {
         target: App
         function onSelectionChanged() { page.reload() }
         function onInstancesChanged() { page.reload() }
+        function onContentChanged() { page.reload() }
     }
 
     Component.onCompleted: reload()
@@ -27,7 +44,7 @@ Item {
         title: qsTr("Import modpack")
         fileMode: FileDialog.OpenFile
         nameFilters: [qsTr("Modpacks (*.mrpack *.zip)"), qsTr("All files (*)")]
-        onAccepted: App.importModpack(selectedFile)
+        onAccepted: { page.pendingPack = selectedFile.toString(); packConsent.open() }
     }
 
     FileDialog {

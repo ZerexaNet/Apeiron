@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import platform
 import sys
 from collections.abc import Callable
@@ -120,6 +121,7 @@ def build_context(
 
     http = HttpClient(
         HttpConfig(
+            use_mirrors=True,
             timeout=settings.download_timeout,
             retries=settings.download_retries,
         )
@@ -161,7 +163,7 @@ def build_context(
         downloader,
         http=http,
         paths=paths,
-        curseforge_key="",
+        curseforge_key=os.environ.get("APEIRON_CURSEFORGE_API_KEY", ""),
         java_path=settings_store.current.java_path,
     )
 

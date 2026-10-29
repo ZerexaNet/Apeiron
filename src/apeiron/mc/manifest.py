@@ -98,7 +98,13 @@ class VersionManifest:
     # -- version JSON -------------------------------------------------------
     def fetch_version_json(self, version_id: str) -> dict[str, Any]:
         summary = self.find(version_id)
-        payload = self.http.get_json(summary.url)
+        body = self.http.get_bytes(summary.url, expected_sha1=summary.sha1)
+        if summary.sha1 and hashlib.sha1(body).hexdigest() != summary.sha1.lower():
+            raise IntegrityError(f"version JSON checksum mismatch: {version_id}")
+        try:
+            payload = json.loads(body)
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise NetworkError(f"invalid version JSON: {version_id}") from exc
         if not isinstance(payload, dict):
             raise NetworkError(f"version JSON for {version_id} is not an object")
         if payload.get("id") != version_id:

@@ -99,43 +99,41 @@ def main() -> int:
         "--standalone",
         "--assume-yes-for-downloads",
         "--enable-plugin=pyside6",
-        "--include-qt-plugins=platforms,imageformats,iconengines,tls",
+        "--include-qt-plugins=platforms,imageformats,iconengines,tls,qml",
         "--include-package=apeiron",
         "--include-package-data=apeiron",
         "--noinclude-dlls=*.debug",
-        # The extension is shipped as a data file; letting the DLL scanner copy
-        # it again collides with that path (NotADirectoryError on macOS).
-        "--noinclude-dlls=_logcore*",
         f"--output-dir={out_dir}",
-        f"--output-filename=Apeiron{'.exe' if platform.system() == 'Windows' else ''}",
+        f"--output-filename=ApeironLauncher{'.exe' if platform.system() == 'Windows' else ''}",
         "--company-name=Zerexa Ltd",
         "--product-name=Apeiron",
         "--file-version=0.1.0",
         "--product-version=0.1.0",
         "--file-description=Apeiron Minecraft launcher",
         "--copyright=Zerexa Ltd",
-        # The extension is compiled C, not Python source: copy it as data.
-        f"--include-data-files={extension}=apeiron/{extension.name}",
+        "--include-module=apeiron._logcore",
         "packaging/entry.py",
     ]
     if args.onefile:
-        command.insert(2, "--onefile")
+        command.insert(3, "--onefile")
     if args.jobs:
-        command.insert(2, f"--jobs={args.jobs}")
+        command.insert(3, f"--jobs={args.jobs}")
     run(command)
 
     # 4. verify the artifact ------------------------------------------------
     if args.onefile:
-        binary = out_dir / ("Apeiron.exe" if platform.system() == "Windows" else "Apeiron.bin")
+        binary = out_dir / (
+            "ApeironLauncher.exe" if platform.system() == "Windows" else "ApeironLauncher"
+        )
     else:
         suffix = ".exe" if platform.system() == "Windows" else ""
         for dist_name in ("entry.dist", "__main__.dist"):
-            candidate = out_dir / dist_name / f"Apeiron{suffix}"
+            candidate = out_dir / dist_name / f"ApeironLauncher{suffix}"
             if candidate.exists():
                 binary = candidate
                 break
         else:
-            binary = out_dir / "entry.dist" / f"Apeiron{suffix}"
+            binary = out_dir / "entry.dist" / f"ApeironLauncher{suffix}"
 
     if not binary.exists():
         matches = list(out_dir.rglob("Apeiron*"))

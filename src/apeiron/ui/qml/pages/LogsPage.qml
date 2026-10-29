@@ -50,7 +50,7 @@ Item {
                     width: flick.width
                     readOnly: true
                     wrapMode: TextArea.WrapAnywhere
-                    font.family: "monospace"
+                    font.family: App.fixedFontFamily
                     font.pixelSize: 12
                     color: Theme.onSurface
                     text: page.tab === 0 ? (App.consoleText.length > 0 ? App.consoleText : qsTr("No game output yet."))

@@ -17,7 +17,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import Property, QObject, QRunnable, QThreadPool, QTimer, Signal, Slot
+from PySide6.QtCore import Property, QObject, QRunnable, QThreadPool, QTimer, QUrl, Signal, Slot
+from PySide6.QtGui import QFontDatabase
 
 from apeiron.core import __version__
 from apeiron.core.errors import ApeironError
@@ -82,6 +83,7 @@ class _Task(QRunnable):
 class Backend(QObject):
     """The single object exposed to QML as ``App``."""
 
+    contentChanged = Signal()
     instancesChanged = Signal()
     accountsChanged = Signal()
     downloadsChanged = Signal()
@@ -169,6 +171,19 @@ class Backend(QObject):
     @Property(str, notify=selectionChanged)
     def selectedInstanceId(self) -> str:
         return self._selected_id
+
+    @Property(str, constant=True)
+    def fixedFontFamily(self) -> str:
+        families = QFontDatabase.families()
+        preferred = QFontDatabase.systemFont(QFontDatabase.SystemFont.FixedFont).family()
+        if preferred in families:
+            return preferred
+        # Offscreen platforms may return a generic, uninstalled family even
+        # from systemFont(). Select an installed fixed-pitch face explicitly.
+        return next(
+            (family for family in families if QFontDatabase.isFixedPitch(family)),
+            families[0] if families else "",
+        )
 
     @Property(str, notify=consoleChanged)
     def consoleText(self) -> str:
@@ -314,6 +329,9 @@ class Backend(QObject):
         self._pending.pop(task_id, None)
         self._busy = ""
         self.busyChanged.emit()
+        if self._status.get("kind") == "download":
+            self._status = {"kind": "idle", "text": ""}
+            self.statusChanged.emit()
         self.notify.emit("error", error.get("code", "error"), self._error_text(error))
 
     def _on_progress(self, task_id: str, payload: Any) -> None:
@@ -369,7 +387,12 @@ class Backend(QObject):
 
     def _download_progress(self, progress: Any) -> None:
         payload = progress.as_dict() if hasattr(progress, "as_dict") else dict(progress)
-        self._status = {"kind": "download", **payload}
+        terminal = payload.get("cancelled") or (
+            payload.get("totalTasks", 0) > 0
+            and payload.get("completedTasks", 0) + payload.get("failedTasks", 0)
+            >= payload["totalTasks"]
+        )
+        self._status = {"kind": "idle" if terminal else "download", **payload}
         self.statusChanged.emit()
 
     # ------------------------------------------------------------------
@@ -428,8 +451,15 @@ class Backend(QObject):
         self._run("java", work, done)
 
     @Slot(str, str, str, str, str)
+    @Slot(str, str, str, str, str, bool)
     def createInstance(
-        self, name: str, mc_version: str, loader: str, loader_version: str, account_id: str
+        self,
+        name: str,
+        mc_version: str,
+        loader: str,
+        loader_version: str,
+        account_id: str,
+        allow_execution: bool = False,
     ) -> None:
         def work() -> dict[str, Any]:
             instance = self.ctx.instances.create(
@@ -442,16 +472,15 @@ class Backend(QObject):
                 width=854,
                 height=480,
             )
-            loader_id = ""
-            if loader and loader != "vanilla" and loader_version:
-                provider = self.ctx.modpacks.loaders.get(loader)
-                if provider is not None:
-                    result = provider.install(mc_version, loader_version)
-                    loader_id = result.version_id
-                    instance.loader = loader
-                    instance.loader_version = loader_version
-                    instance.metadata = {**instance.metadata, "loaderVersionId": loader_id}
-                    self.ctx.instances.update(instance)
+            try:
+                if loader and loader != "vanilla":
+                    self.ctx.modpacks.java_path = self.ctx.settings.java_path
+                    self.ctx.modpacks._install_loader(
+                        instance, loader, loader_version, allow_execution=allow_execution
+                    )
+            except BaseException:
+                self.ctx.instances.delete(instance.id)
+                raise
             return {"id": instance.id, "name": instance.name}
 
         def done(result: dict[str, Any]) -> None:
@@ -467,7 +496,7 @@ class Backend(QObject):
     def deleteInstance(self, instance_id: str) -> None:
         def work() -> dict[str, Any]:
             instance = self.ctx.instances.get(instance_id)
-            self.ctx.instances.delete(instance_id)
+            self.ctx.launcher.delete_instance(instance_id, self.ctx.instances.delete)
             return {"name": instance.name}
 
         def done(result: dict[str, Any]) -> None:
@@ -582,6 +611,7 @@ class Backend(QObject):
                 access_token=session.access_token,
                 user_type=session.user_type,
                 xuid=session.xuid,
+                client_id=session.client_id,
                 on_line=self._game_line,
                 on_exit=self._game_exit,
                 on_stage=lambda stage: self._signals.progress.emit(
@@ -776,9 +806,25 @@ class Backend(QObject):
     # content, modpacks, files
     # ------------------------------------------------------------------
     @Slot(str)
-    def importModpack(self, path: str) -> None:
+    def importInstance(self, path: str) -> None:
         def work() -> dict[str, Any]:
-            result = self.ctx.modpacks.import_archive(Path(path))
+            instance = self.ctx.instances.import_instance(local_path(path))
+            return {"id": instance.id}
+
+        def done(result: dict[str, Any]) -> None:
+            self._refresh_instances()
+            self.selectInstance(result["id"])
+
+        self._run("import-instance", work, done)
+
+    @Slot(str)
+    @Slot(str, bool)
+    def importModpack(self, path: str, allow_execution: bool = False) -> None:
+        def work() -> dict[str, Any]:
+            self.ctx.modpacks.java_path = self.ctx.settings.java_path
+            result = self.ctx.modpacks.import_archive(
+                local_path(path), allow_execution=allow_execution
+            )
             return result.as_dict()
 
         def done(result: dict[str, Any]) -> None:
@@ -793,7 +839,7 @@ class Backend(QObject):
     def exportInstance(self, instance_id: str, target: str) -> None:
         def work() -> dict[str, Any]:
             instance = self.ctx.instances.get(instance_id)
-            path = Path(target)
+            path = local_path(target)
             if path.suffix.lower() == ".mrpack":
                 out = self.ctx.modpacks.export_mrpack(instance, path)
             else:
@@ -809,10 +855,11 @@ class Backend(QObject):
     def installContent(self, instance_id: str, path: str, kind: str) -> None:
         def work() -> dict[str, Any]:
             instance = self.ctx.instances.get(instance_id)
-            record = self.ctx.modpacks.install_content_file(instance, Path(path), kind)
+            record = self.ctx.modpacks.install_content_file(instance, local_path(path), kind)
             return {"filename": record.filename}
 
         def done(result: dict[str, Any]) -> None:
+            self.contentChanged.emit()
             self.notify.emit("success", "content.installed", result["filename"])
 
         self._run("install-content", work, done)
@@ -828,7 +875,7 @@ class Backend(QObject):
             self.ctx.modpacks.set_content_enabled(instance, record, enabled)
             return {}
 
-        self._run("toggle-content", work)
+        self._run("toggle-content", work, lambda result: self.contentChanged.emit())
 
     @Slot(str, str)
     def removeContent(self, instance_id: str, record_id: str) -> None:
@@ -840,7 +887,7 @@ class Backend(QObject):
                 self.ctx.modpacks.remove_content(instance, record)
             return {}
 
-        self._run("remove-content", work)
+        self._run("remove-content", work, lambda result: self.contentChanged.emit())
 
     @Slot(str)
     def contentFor(self, instance_id: str) -> list[dict[str, Any]]:
@@ -970,6 +1017,9 @@ class Backend(QObject):
             return runtime.as_dict()
 
         def done(result: dict[str, Any]) -> None:
+            self.ctx.settings_store.update(java_path=result["path"])
+            self.ctx.modpacks.java_path = result["path"]
+            self.settingsChanged.emit()
             self.detect_java()
             self.notify.emit("success", "java.installed", str(result.get("version", "")))
 
@@ -1058,7 +1108,8 @@ class Backend(QObject):
     def shutdown(self, timeout_ms: int = 5000) -> None:
         """Stop background work before the engine is destroyed."""
         try:
-            self.ctx.launcher.stop()
+            if self.ctx.settings.close_game_on_launcher_exit:
+                self.ctx.launcher.stop()
         except Exception:
             pass
         self._pool.waitForDone(timeout_ms)
@@ -1075,3 +1126,12 @@ def _qt_version() -> str:
     from PySide6.QtCore import qVersion
 
     return qVersion()
+
+
+def local_path(value: str) -> Path:
+    url = QUrl(value)
+    if url.isLocalFile():
+        return Path(url.toLocalFile())
+    if url.scheme() and not (len(value) > 1 and value[1] == ":"):
+        raise ApeironError("a local file path is required")
+    return Path(value)

@@ -48,6 +48,7 @@ class Rule:
 
 
 def _os_matches(rule: Rule, platform_key: str, os_version: str) -> bool:
+    platform_key = "osx" if platform_key == "macos" else platform_key
     if rule.os_name is not None and rule.os_name != platform_key:
         return False
     if rule.os_arch is not None:
@@ -174,7 +175,7 @@ class Library:
         return Artifact(path=relative, url=base + relative, sha1=self.sha1, size=self.size)
 
     def native_artifact(self, platform_key: str) -> Artifact | None:
-        classifier = self.natives.get(platform_key)
+        classifier = self.natives.get("osx" if platform_key == "macos" else platform_key)
         if not classifier:
             return None
         classifier = classifier.replace(
@@ -401,7 +402,7 @@ def resolve_arguments(
                 output.append(_substitute(value, values))
             elif isinstance(value, Sequence):
                 output.extend(_substitute(str(v), values) for v in value)
-    return [token for token in output if token != ""]
+    return output
 
 
 def split_legacy_arguments(legacy: str, values: Mapping[str, str]) -> list[str]:
