@@ -5,6 +5,15 @@ on:
     branches: ["main", "develop"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      macos_arch:
+        description: "macOS architecture (ARM64 runners may have capacity delays)"
+        type: choice
+        required: true
+        default: x86_64
+        options:
+          - x86_64
+          - arm64
 
 # Least privilege: nothing here writes to the repository.
 permissions:
@@ -53,7 +62,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-14, windows-2022]
+        os: [ubuntu-24.04, "${{ inputs.macos_arch == 'arm64' && 'macos-15' || 'macos-15-intel' }}", windows-2022]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -82,7 +91,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-14, windows-2022]
+        os: [ubuntu-24.04, "${{ inputs.macos_arch == 'arm64' && 'macos-15' || 'macos-15-intel' }}", windows-2022]
         python: ["3.10", "3.12"]
     runs-on: ${{ matrix.os }}
     steps:

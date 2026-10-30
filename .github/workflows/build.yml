@@ -14,6 +14,15 @@ on:
       - "pyproject.toml"
       - ".github/workflows/build.yml"
   workflow_dispatch:
+    inputs:
+      macos_arch:
+        description: "macOS architecture (ARM64 runners may have capacity delays)"
+        type: choice
+        required: true
+        default: x86_64
+        options:
+          - x86_64
+          - arm64
 
 permissions:
   contents: read
@@ -36,10 +45,15 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
+            arch: x64
             artifact: apeiron-linux-x86_64
-          - os: macos-14
-            artifact: apeiron-macos-arm64
+          # Keep routine builds off the capacity-constrained ARM64 pool.
+          # Native Apple Silicon packages remain available via Run workflow.
+          - os: ${{ inputs.macos_arch == 'arm64' && 'macos-15' || 'macos-15-intel' }}
+            arch: ${{ inputs.macos_arch == 'arm64' && 'arm64' || 'x64' }}
+            artifact: ${{ inputs.macos_arch == 'arm64' && 'apeiron-macos-arm64' || 'apeiron-macos-x86_64' }}
           - os: windows-2022
+            arch: x64
             artifact: apeiron-windows-x86_64
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
@@ -48,7 +62,21 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          architecture: ${{ matrix.arch }}
           cache: pip
+      - name: Verify interpreter architecture
+        shell: bash
+        env:
+          EXPECTED_ARCH: ${{ matrix.arch }}
+        run: |
+          python - <<'PY_ARCH'
+          import os, platform
+          expected = os.environ["EXPECTED_ARCH"]
+          actual = platform.machine().lower()
+          allowed = {"x64": {"x86_64", "amd64"}, "arm64": {"arm64", "aarch64"}}
+          assert actual in allowed[expected], f"expected {expected}, got {actual}"
+          print(f"interpreter architecture: {actual}")
+          PY_ARCH
       - name: Install Qt runtime libraries (Linux)
         if: runner.os == 'Linux'
         run: |
