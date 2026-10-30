@@ -52,18 +52,18 @@ The script:
 1. rebuilds the native extension in place;
 2. compiles translations;
 3. runs Nuitka with `--standalone --enable-plugin=pyside6`, including the QML
-   module, translations and `apeiron._logcore` as data files (the extension is a
-   compiled C module, not Python source);
+   module and translations as package data and `apeiron._logcore` as a native
+   extension module;
 4. runs the resulting binary with `--self-check` and fails the build if the
    report is not `ok`.
 
 Artifact layout:
 
 ```
-dist/Apeiron/
-  apeiron                      # entry point (apeiron.exe on Windows)
+dist/entry.dist/
+  ApeironLauncher             # entry point (ApeironLauncher.exe on Windows)
   apeiron/_logcore.<ext>       # native extension, loaded by the frozen app
-  apeiron/qml/…                # QML module + Material components
+  apeiron/ui/qml/…             # QML module + Material components
   apeiron/i18n/*.qm            # compiled translations
   PySide6/…                    # Qt runtime and plugins
 ```
@@ -72,18 +72,39 @@ Platform notes:
 
 * **Windows** — build on Windows with MSVC; the output is a folder that an
   installer (e.g. Inno Setup, not included here) can package.
-* **macOS** — `--macos-create-app-bundle` produces `Apeiron.app`. Signing and
-  notarisation require an Apple Developer ID; no certificate is available to
-  this project, so releases are unsigned and Gatekeeper will warn.
+* **macOS** — the current build produces a standalone directory, not an `.app`
+  bundle. Signing and notarisation are not configured. See runner selection below.
 * **Linux** — the standalone folder is self-contained; ship it as-is, in a
   tarball, or wrap it with AppImage/deb tooling.
 
 ## Verifying a build
 
 ```bash
-dist/Apeiron/apeiron --self-check | python -c "import json,sys; d=json.load(sys.stdin); assert d['ok']"
+dist/entry.dist/ApeironLauncher --self-check | python -c "import json,sys; d=json.load(sys.stdin); assert d['ok']"
 ```
 
 `--self-check` loads the native extension, opens/migrates SQLite, constructs the
 QML interface offscreen and reports Qt warnings. A build that cannot do this is
 not a working build, regardless of whether the compiler succeeded.
+
+
+## macOS hosted runners and architecture
+
+Routine PR, push and tag workflows use `macos-15-intel` for the macOS jobs.
+This is GitHub's standard Intel runner and generates `apeiron-macos-x86_64`.
+Intel applications require Rosetta 2 on Apple Silicon; this archive is not a
+native ARM64 package.
+
+GitHub's ARM64 runner pool can fail to acquire a job before any workflow step
+starts (`The job was not acquired by Runner ...`, with capacity annotations).
+Changing Python dependencies or retrying a step cannot repair that scheduling
+failure, and changing `macos-14` to another ARM64 label still uses ARM64 capacity.
+
+To build or test natively for Apple Silicon, open **Actions → Build** (or **CI**),
+choose **Run workflow**, select the branch/ref and set `macos_arch` to `arm64`.
+That macOS job uses `macos-15`, and Build uploads `apeiron-macos-arm64`.
+The default input is `x86_64`. Build explicitly selects the matching Python
+architecture and checks it before compiling, so archive names match the executable.
+ARM64 manual jobs may still queue when GitHub has insufficient capacity.
+
+Runner labels: https://docs.github.com/en/actions/reference/runners/github-hosted-runners
