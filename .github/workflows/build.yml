@@ -135,7 +135,10 @@ jobs:
 
   release:
     name: Publish release archives
-    if: startsWith(github.ref, 'refs/tags/v')
+    # PR builds never receive release write permissions.
+    if: >-
+      github.event_name != 'pull_request' &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     needs: package
     runs-on: ubuntu-24.04
     permissions:
@@ -153,8 +156,35 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" release-artifacts/* --clobber
+          prerelease=true
+          latest=false
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            tag="$GITHUB_REF_NAME"
+            title="Apeiron $tag"
+            tag_args=(--verify-tag)
+            # Only a complete version without a prerelease suffix is stable.
+            if [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(\+[0-9A-Za-z.-]+)?$ ]]; then
+              prerelease=false
+              latest=true
+            fi
           else
-            gh release create "$GITHUB_REF_NAME" release-artifacts/* --verify-tag --generate-notes
+            # One immutable tag per run; retries reuse it, never move a tag.
+            tag="preview-${GITHUB_RUN_ID}"
+            title="Apeiron preview #${GITHUB_RUN_NUMBER}"
+            tag_args=(--target "$GITHUB_SHA")
           fi
+          shopt -s nullglob
+          assets=(release-artifacts/*.zip release-artifacts/*.tar.gz)
+          # All three platform archives must exist before creating a release.
+          test "${#assets[@]}" -eq 3 || { echo "expected three platform archives"; exit 1; }
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "${assets[@]}" --clobber
+          else
+            gh release create "$tag" "${assets[@]}" "${tag_args[@]}" \
+              --title "$title" --generate-notes --draft \
+              --prerelease="$prerelease" --latest="$latest"
+          fi
+          # Publish only after every asset upload succeeds; also recover drafts
+          # left by an interrupted previous attempt.
+          gh release edit "$tag" --draft=false \
+            --prerelease="$prerelease" --latest="$latest"
