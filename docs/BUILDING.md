@@ -108,3 +108,24 @@ architecture and checks it before compiling, so archive names match the executab
 ARM64 manual jobs may still queue when GitHub has insufficient capacity.
 
 Runner labels: https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+
+
+## Automatic releases
+
+After all three Build jobs compile, self-check and upload their archives:
+
+- A push to `main` publishes a **Pre-release** named `Apeiron preview #N`,
+  using a unique `preview-<run-id>` tag pointing at the exact built commit.
+- A tag such as `v1.2.3-beta.1` or `v1.2.3-rc.1` publishes a **Pre-release**.
+- A complete version tag such as `v1.2.3` publishes a stable release and marks
+  it as Latest. Other `v*` tags are conservatively treated as previews.
+- Manual Build runs publish previews on `main`, or the corresponding release
+  when run against a `v*` tag. Manual builds on other branches only upload
+  Actions artifacts. PR builds never publish releases.
+
+Preview releases do not replace the Latest stable release. New releases stay
+in draft until all assets upload successfully; rerunning the same workflow run
+reuses its tag and can finish an interrupted draft. No existing tag is moved.
+The release job requires all three package jobs to succeed. Download the archives
+from the repository's Releases page; Actions artifacts remain available for
+14 days as well. This automation takes effect after the workflow change merges.
